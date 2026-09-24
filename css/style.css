@@ -131,7 +131,7 @@ body {
   }
 
   .hud-btn-rotate {
-    display: inline-flex !important;
+    display: inline-flex;
   }
 }
 
@@ -184,49 +184,104 @@ body {
   box-shadow: 0 0 12px var(--accent-gold);
 }
 
-/* Top Floating Utility HUD */
+/* Top Floating Utility HUD (Responsive Collapsible Quick Menu) */
 .top-hud {
   position: absolute;
-  top: 14px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-glass);
-  padding: 6px 14px;
-  border-radius: 30px;
+  padding: 4px 8px;
+  border-radius: 24px;
   z-index: 60;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  transition: opacity 0.3s;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  transition: all var(--transition-fast);
 }
 
 .hud-pill {
   font-family: 'Fredoka', cursive;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #fbbf24;
   letter-spacing: 0.5px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.2);
   border-radius: 12px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Quick Menu Toggle Button (Khusus Mobile / Tablet) */
+.top-hud .hud-menu-toggle {
+  display: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.hud-menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.hud-menu-toggle:active {
+  transform: scale(0.92);
+}
+
+.hud-menu-toggle.active {
+  background: var(--primary);
+  border-color: var(--primary-light);
+  box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
+}
+
+.hud-menu-toggle.active .icon-gear {
+  transform: rotate(60deg);
+  transition: transform 0.3s ease;
+}
+
+/* Actions Menu Container */
+.hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .hud-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text-main);
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 0.78rem;
+  padding: 5px 9px;
+  border-radius: 16px;
+  font-size: 0.76rem;
   font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
   transition: all var(--transition-fast);
+}
+
+.hud-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  stroke: currentColor;
 }
 
 .hud-btn:hover {
@@ -242,6 +297,83 @@ body {
   background: var(--primary);
   border-color: var(--primary-light);
   box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
+}
+
+/* Mobile & Tablet Responsive HUD Mode */
+@media screen and (max-width: 1024px) {
+  .top-hud {
+    top: 6px;
+    padding: 2px 6px;
+    gap: 5px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.85);
+  }
+
+  .hud-pill {
+    font-size: 0.74rem;
+    padding: 2px 6px;
+  }
+
+  .hud-pill .pill-prefix {
+    display: none;
+  }
+
+  .top-hud .hud-menu-toggle {
+    display: inline-flex;
+  }
+
+  /* Popover Menu Dropdown */
+  .hud-actions {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px) scale(0.96);
+    flex-direction: column;
+    min-width: 165px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding: 6px;
+    gap: 4px;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+  }
+
+  .hud-actions.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  .hud-actions .hud-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .hud-actions .hud-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: none;
+  }
+
+  .hud-actions .hud-btn:active {
+    transform: scale(0.98);
+  }
+
+  .hud-actions .hud-icon {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 /* Main Slide Stage */

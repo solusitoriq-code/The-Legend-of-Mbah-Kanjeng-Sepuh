@@ -23,7 +23,7 @@
     rel="stylesheet">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 
 <body>
@@ -49,20 +49,49 @@
     </div>
 
     <!-- Floating Top Utility HUD -->
-    <header class="top-hud">
-      <div id="slide-counter-pill" class="hud-pill">Slide 1 / 16</div>
-      <button id="btn-toggle-sfx" class="hud-btn active" title="Suara Efek (SFX)">
-        SFX
+    <header class="top-hud" id="top-hud">
+      <div id="slide-counter-pill" class="hud-pill"><span class="pill-prefix">Slide </span>1 / 16</div>
+
+      <!-- Quick Menu Toggle (Mobile / Tablet) -->
+      <button id="btn-hud-menu-toggle" class="hud-btn hud-menu-toggle" aria-label="Menu Pengaturan" aria-expanded="false" title="Pengaturan & Utilitas">
+        <svg class="hud-icon icon-gear" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
       </button>
-      <button id="btn-toggle-fullscreen" class="hud-btn" title="Mode Layar Penuh">
-        Layar Penuh
-      </button>
-      <button id="btn-flip-orientation" class="hud-btn hud-btn-rotate" style="display:none;" title="Putar Sudut Orientasi (90° / 270°)">
-        Putar Layar
-      </button>
-      <button id="btn-install-pwa" class="hud-btn" style="display:none;" title="Pasang ke HP / Desktop">
-        Pasang Aplikasi
-      </button>
+
+      <!-- Utility Actions (Horizontal di Desktop, Popover di Layar Sentuh/Mobile) -->
+      <div class="hud-actions" id="hud-actions-menu">
+        <button id="btn-toggle-sfx" class="hud-btn active" title="Suara Efek (SFX)">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <span class="hud-btn-text">Audio Aktif</span>
+        </button>
+        <button id="btn-toggle-fullscreen" class="hud-btn" title="Mode Layar Penuh">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+          <span class="hud-btn-text">Layar Penuh</span>
+        </button>
+        <button id="btn-flip-orientation" class="hud-btn hud-btn-rotate" style="display:none;" title="Putar Sudut Orientasi (90° / 270°)">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span class="hud-btn-text">Putar Layar</span>
+        </button>
+        <button id="btn-install-pwa" class="hud-btn" style="display:none;" title="Pasang ke HP / Desktop">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="hud-btn-text">Pasang Aplikasi</span>
+        </button>
+      </div>
     </header>
 
     <!-- Slide Stage: Contains all 16 slides -->
@@ -444,7 +473,7 @@
   </main>
 
   <!-- Application Logic Modules -->
-  <script type="module" src="js/app.js?v=11"></script>
+  <script type="module" src="js/app.js?v=12"></script>
 
 </body>
 

@@ -79,7 +79,10 @@ class InteractivePresentationApp {
     this.modalExample = document.getElementById('modal-example');
     this.btnCloseInfoModal = document.getElementById('btn-close-info-modal');
 
-    // HUD Buttons
+    // HUD Buttons & Quick Menu
+    this.topHUD = document.getElementById('top-hud');
+    this.btnHUDMenuToggle = document.getElementById('btn-hud-menu-toggle');
+    this.hudActionsMenu = document.getElementById('hud-actions-menu');
     this.btnSFX = document.getElementById('btn-toggle-sfx');
     this.btnFullscreen = document.getElementById('btn-toggle-fullscreen');
     this.btnFlipOrientation = document.getElementById('btn-flip-orientation');
@@ -300,17 +303,43 @@ class InteractivePresentationApp {
       }
     });
 
-    // Top HUD
+    // Top HUD Quick Menu Toggle & Popover
+    if (this.btnHUDMenuToggle && this.hudActionsMenu) {
+      this.btnHUDMenuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.playPop();
+        this.toggleHUDMenu();
+      });
+    }
+
+    // Tutup popover jika user klik di luar HUD
+    document.addEventListener('click', (e) => {
+      if (this.hudActionsMenu && this.hudActionsMenu.classList.contains('open')) {
+        if (!this.topHUD || !this.topHUD.contains(e.target)) {
+          this.closeHUDMenu();
+        }
+      }
+    });
+
+    // Tutup popover otomatis setelah aksi dipilih di perangkat sentuh/mobile
+    if (this.hudActionsMenu) {
+      this.hudActionsMenu.querySelectorAll('.hud-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (window.innerWidth <= 1024) {
+            this.closeHUDMenu();
+          }
+        });
+      });
+    }
+
+    // Top HUD Actions
     this.btnSFX.addEventListener('click', () => {
       const isMuted = sound.toggleMute();
+      this.updateSFXButton(isMuted);
       if (isMuted) {
-        this.btnSFX.classList.remove('active');
-        this.btnSFX.textContent = 'Audio Mati';
         if (this.videoSlide1) this.videoSlide1.muted = true;
         if (this.videoSlide2) this.videoSlide2.muted = true;
       } else {
-        this.btnSFX.classList.add('active');
-        this.btnSFX.textContent = 'Audio Aktif';
         sound.playPop();
         if (this.currentSlide === 1 && this.videoSlide1) {
           this.videoSlide1.muted = false;
@@ -323,6 +352,10 @@ class InteractivePresentationApp {
     this.btnFullscreen.addEventListener('click', () => {
       sound.playClick();
       this.toggleFullscreen();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      this.updateFullscreenButton(!!document.fullscreenElement);
     });
 
     if (this.btnFlipOrientation) {
@@ -345,6 +378,7 @@ class InteractivePresentationApp {
           this.goToSlide(this.currentSlide - 1);
         }
       } else if (e.key === 'Escape') {
+        this.closeHUDMenu();
         this.closeDrawer();
         this.infoModal.style.display = 'none';
         this.quizModal.style.display = 'none';
@@ -436,7 +470,8 @@ class InteractivePresentationApp {
     // Update Progress bar & counter
     const pct = ((slideNumber / this.totalSlides) * 100).toFixed(1);
     this.progressBar.style.width = `${pct}%`;
-    this.counterPill.textContent = `Slide ${slideNumber} / ${this.totalSlides}`;
+    this.counterPill.innerHTML = `<span class="pill-prefix">Slide </span>${slideNumber} / ${this.totalSlides}`;
+    this.closeHUDMenu();
 
     // Highlight drawer item
     const drawerItems = document.querySelectorAll('.drawer-slide-item');
@@ -560,19 +595,104 @@ class InteractivePresentationApp {
     }, 2500);
   }
 
+  // --- HUD Menu & Utility UI Helpers ---
+  toggleHUDMenu() {
+    if (!this.hudActionsMenu) return;
+    const isOpen = this.hudActionsMenu.classList.toggle('open');
+    if (this.btnHUDMenuToggle) {
+      this.btnHUDMenuToggle.classList.toggle('active', isOpen);
+      this.btnHUDMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+  }
+
+  openHUDMenu() {
+    if (!this.hudActionsMenu) return;
+    this.hudActionsMenu.classList.add('open');
+    if (this.btnHUDMenuToggle) {
+      this.btnHUDMenuToggle.classList.add('active');
+      this.btnHUDMenuToggle.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  closeHUDMenu() {
+    if (!this.hudActionsMenu) return;
+    this.hudActionsMenu.classList.remove('open');
+    if (this.btnHUDMenuToggle) {
+      this.btnHUDMenuToggle.classList.remove('active');
+      this.btnHUDMenuToggle.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  updateSFXButton(isMuted) {
+    if (!this.btnSFX) return;
+    if (isMuted) {
+      this.btnSFX.classList.remove('active');
+      this.btnSFX.innerHTML = `
+        <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+        <span class="hud-btn-text">Audio Mati</span>
+      `;
+    } else {
+      this.btnSFX.classList.add('active');
+      this.btnSFX.innerHTML = `
+        <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <span class="hud-btn-text">Audio Aktif</span>
+      `;
+    }
+  }
+
+  updateFullscreenButton(isFullscreen) {
+    if (!this.btnFullscreen) return;
+    if (isFullscreen) {
+      this.btnFullscreen.classList.add('active');
+      this.btnFullscreen.innerHTML = `
+        <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+        <span class="hud-btn-text">Kecilkan</span>
+      `;
+    } else {
+      this.btnFullscreen.classList.remove('active');
+      this.btnFullscreen.innerHTML = `
+        <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+        <span class="hud-btn-text">Layar Penuh</span>
+      `;
+    }
+  }
+
+  updateFlipButton(labelAngle) {
+    if (!this.btnFlipOrientation) return;
+    this.btnFlipOrientation.innerHTML = `
+      <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      <span class="hud-btn-text">Putar ${labelAngle}</span>
+    `;
+  }
+
   toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
         this.requestLandscapeLock();
+        this.updateFullscreenButton(true);
       }).catch(err => {
         console.warn('Fullscreen request failed:', err);
       });
-      this.btnFullscreen.innerHTML = '<span>⛶</span> Kecilkan';
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       }
-      this.btnFullscreen.innerHTML = '<span>⛶</span> Layar Penuh';
+      this.updateFullscreenButton(false);
     }
   }
 
@@ -641,7 +761,7 @@ class InteractivePresentationApp {
       }
       if (this.btnFlipOrientation) {
         this.btnFlipOrientation.style.display = 'inline-flex';
-        this.btnFlipOrientation.textContent = `Putar ${this.portraitRotationAngle === 90 ? '270°' : '90°'}`;
+        this.updateFlipButton(this.portraitRotationAngle === 90 ? '270°' : '90°');
       }
       this.requestLandscapeLock();
     } else {

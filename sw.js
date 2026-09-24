@@ -1,11 +1,11 @@
-const CACHE_NAME = 'materi-interaktif-v11';
+const CACHE_NAME = 'materi-interaktif-v12';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
-  './css/style.css?v=11',
+  './css/style.css?v=12',
   './js/app.js',
-  './js/app.js?v=11',
+  './js/app.js?v=12',
   './js/audio.js',
   './js/quiz-data.js',
   './manifest.json',
@@ -51,6 +51,22 @@ self.addEventListener('fetch', (event) => {
 
   // Bypass cross-origin requests (Wordwall, Sketchfab, Google Fonts, etc.)
   if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Network-First untuk navigasi (HTML) agar update halaman langsung diterima saat online
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
     return;
   }
 
