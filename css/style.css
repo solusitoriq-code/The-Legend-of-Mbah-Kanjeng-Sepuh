@@ -81,6 +81,90 @@ body {
   }
 }
 
+/* ==========================================================================
+   Auto-Rotate Landscape untuk Perangkat Mobile Portrait
+   ========================================================================== */
+@media screen and (orientation: portrait) and (max-width: 1024px) {
+  body {
+    overflow: hidden;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    position: fixed;
+    inset: 0;
+  }
+
+  #app-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center center;
+    width: 177.78vw;
+    width: 177.78dvw;
+    height: 100vw;
+    height: 100dvw;
+    max-width: 100vh;
+    max-width: 100dvh;
+    max-height: 56.25vh;
+    max-height: 56.25dvh;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+  }
+
+  @media (min-aspect-ratio: 9/16) {
+    #app-container {
+      width: 100vh;
+      width: 100dvh;
+      height: 56.25vh;
+      height: 56.25dvh;
+    }
+  }
+
+  @media (max-aspect-ratio: 9/16) {
+    #app-container {
+      width: 177.78vw;
+      width: 177.78dvw;
+      height: 100vw;
+      height: 100dvw;
+    }
+  }
+
+  .hud-btn-rotate {
+    display: inline-flex !important;
+  }
+}
+
+/* Override eksplisit via JavaScript untuk kontrol sudut rotasi (90° / 270°) */
+#app-container.force-rotate-90,
+#app-container.force-rotate-270 {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform-origin: center center !important;
+  max-width: none !important;
+  max-height: none !important;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9) !important;
+}
+
+#app-container.force-rotate-90 {
+  transform: translate(-50%, -50%) rotate(90deg) !important;
+}
+
+#app-container.force-rotate-270 {
+  transform: translate(-50%, -50%) rotate(270deg) !important;
+}
+
+#app-container.force-rotate-normal {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  transform-origin: center center !important;
+  max-width: 177.78vh !important;
+  max-height: 56.25vw !important;
+}
+
 /* Top Progress Indicator Bar */
 .progress-strip {
   position: absolute;

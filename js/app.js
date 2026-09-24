@@ -36,11 +36,16 @@ class InteractivePresentationApp {
     this.gameRound = 0;
     this.gameScore = 0;
 
+    // Mobile Portrait Auto-Rotate State
+    this.portraitRotationAngle = 90;
+    this.isPortraitMode = false;
+
     this.init();
   }
 
   init() {
     this.cacheDOM();
+    this.initOrientationHandler();
     this.renderDrawerList();
     this.bindEvents();
     this.goToSlide(1, false);
@@ -48,6 +53,7 @@ class InteractivePresentationApp {
   }
 
   cacheDOM() {
+    this.appContainer = document.getElementById('app-container');
     this.slideFrames = document.querySelectorAll('.slide-frame');
     this.progressBar = document.getElementById('progress-bar-fill');
     this.counterPill = document.getElementById('slide-counter-pill');
@@ -76,6 +82,7 @@ class InteractivePresentationApp {
     // HUD Buttons
     this.btnSFX = document.getElementById('btn-toggle-sfx');
     this.btnFullscreen = document.getElementById('btn-toggle-fullscreen');
+    this.btnFlipOrientation = document.getElementById('btn-flip-orientation');
     this.btnInstallPWA = document.getElementById('btn-install-pwa');
 
     // Toast
@@ -114,6 +121,7 @@ class InteractivePresentationApp {
       this.btnStartSplash.addEventListener('click', () => {
         sound.init();
         sound.playSuccess();
+        this.requestLandscapeLock();
         this.splashOverlay.classList.add('fade-out');
         if (this.videoSlide1) {
           this.videoSlide1.muted = sound.muted;
@@ -317,6 +325,13 @@ class InteractivePresentationApp {
       this.toggleFullscreen();
     });
 
+    if (this.btnFlipOrientation) {
+      this.btnFlipOrientation.addEventListener('click', () => {
+        sound.playPop();
+        this.flipOrientation();
+      });
+    }
+
     // Keyboard Navigation
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
@@ -338,7 +353,7 @@ class InteractivePresentationApp {
       }
     });
 
-    // Mobile Touch Swipes
+    // Mobile Touch Swipes (menyesuaikan orientasi rotasi saat mode portrait)
     let touchStartX = 0;
     let touchStartY = 0;
     document.addEventListener('touchstart', (e) => {
@@ -352,12 +367,25 @@ class InteractivePresentationApp {
       const dx = touchEndX - touchStartX;
       const dy = touchEndY - touchStartY;
 
-      // Only trigger horizontal swipe if not scrolling vertically & not on embeds
-      if (Math.abs(dx) > 60 && Math.abs(dy) < 50 && !e.target.closest('.ar-screen-container') && !e.target.closest('#wordwall-embed-box')) {
-        if (dx < 0 && this.currentSlide < this.totalSlides) {
+      let effectiveDx = dx;
+      let effectiveDy = dy;
+
+      if (this.isPortraitMode) {
+        if (this.portraitRotationAngle === 270) {
+          effectiveDx = -dy;
+          effectiveDy = dx;
+        } else {
+          effectiveDx = dy;
+          effectiveDy = -dx;
+        }
+      }
+
+      // Hanya picu swipe horizontal slide jika bukan scroll vertikal konten & bukan pada iframe interaktif
+      if (Math.abs(effectiveDx) > 60 && Math.abs(effectiveDy) < 80 && !e.target.closest('.ar-screen-container') && !e.target.closest('#wordwall-embed-box')) {
+        if (effectiveDx < 0 && this.currentSlide < this.totalSlides) {
           // Swipe Left -> Next
           this.goToSlide(this.currentSlide + 1);
-        } else if (dx > 0 && this.currentSlide > 1) {
+        } else if (effectiveDx > 0 && this.currentSlide > 1) {
           // Swipe Right -> Prev
           this.goToSlide(this.currentSlide - 1);
         }
@@ -534,7 +562,9 @@ class InteractivePresentationApp {
 
   toggleFullscreen() {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
+      document.documentElement.requestFullscreen().then(() => {
+        this.requestLandscapeLock();
+      }).catch(err => {
         console.warn('Fullscreen request failed:', err);
       });
       this.btnFullscreen.innerHTML = '<span>⛶</span> Kecilkan';
@@ -544,6 +574,91 @@ class InteractivePresentationApp {
       }
       this.btnFullscreen.innerHTML = '<span>⛶</span> Layar Penuh';
     }
+  }
+
+  // --- Orientasi Layar & Auto Rotate ---
+  initOrientationHandler() {
+    const checkOrientation = () => {
+      const isPortrait = window.matchMedia('(orientation: portrait)').matches || (window.innerHeight > window.innerWidth);
+      const isMobileOrTablet = window.innerWidth <= 1024 || window.innerHeight <= 1024;
+      this.handleOrientationChange(isPortrait && isMobileOrTablet);
+    };
+
+    const mql = window.matchMedia('(orientation: portrait)');
+    if (mql && mql.addEventListener) {
+      mql.addEventListener('change', (e) => {
+        const isMobileOrTablet = window.innerWidth <= 1024 || window.innerHeight <= 1024;
+        this.handleOrientationChange(e.matches && isMobileOrTablet);
+      });
+    }
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(checkOrientation, 200);
+    });
+
+    // Pengecekan awal saat inisialisasi
+    checkOrientation();
+  }
+
+  requestLandscapeLock() {
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      screen.orientation.lock('landscape').catch(() => {
+        // Abaikan jika browser membatasi penguncian layar tanpa fullscreen atau standalone mode
+      });
+    }
+  }
+
+  handleOrientationChange(isPortrait) {
+    this.isPortraitMode = isPortrait;
+
+    if (!this.appContainer) return;
+
+    if (isPortrait) {
+      // Hitung dimensi proporsional 16:9 pas saat perangkat diorientasi portrait
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const availW = vh;
+      const availH = vw;
+      let targetW, targetH;
+      if (availW / availH >= (16 / 9)) {
+        targetH = availH;
+        targetW = availH * (16 / 9);
+      } else {
+        targetW = availW;
+        targetH = availW / (16 / 9);
+      }
+      this.appContainer.style.width = `${Math.round(targetW)}px`;
+      this.appContainer.style.height = `${Math.round(targetH)}px`;
+
+      // Terapkan rotasi landscape simulasi
+      if (this.portraitRotationAngle === 270) {
+        this.appContainer.classList.remove('force-rotate-90');
+        this.appContainer.classList.add('force-rotate-270');
+      } else {
+        this.appContainer.classList.remove('force-rotate-270');
+        this.appContainer.classList.add('force-rotate-90');
+      }
+      if (this.btnFlipOrientation) {
+        this.btnFlipOrientation.style.display = 'inline-flex';
+        this.btnFlipOrientation.textContent = `Putar ${this.portraitRotationAngle === 90 ? '270°' : '90°'}`;
+      }
+      this.requestLandscapeLock();
+    } else {
+      // Posisi landscape fisik normal
+      this.appContainer.style.width = '';
+      this.appContainer.style.height = '';
+      this.appContainer.classList.remove('force-rotate-90', 'force-rotate-270');
+      if (this.btnFlipOrientation) {
+        this.btnFlipOrientation.style.display = 'none';
+      }
+    }
+  }
+
+  flipOrientation() {
+    this.portraitRotationAngle = this.portraitRotationAngle === 90 ? 270 : 90;
+    this.handleOrientationChange(this.isPortraitMode);
+    this.showToast(`Rotasi layar diubah ke ${this.portraitRotationAngle}°`);
   }
 
   // --- Slide 10: Formative Mini-Game ---
