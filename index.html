@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Media Pembelajaran Interaktif PWA - Mbah Kanjeng Sepuh & Petualangan Gunung Berapi">
+
+  <title>The Legend of Mbah Kanjeng Sepuh</title>
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+
+  <!-- Preconnect Google Fonts for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- Main Presentation 16:9 Viewport -->
+  <main id="app-container">
+
+    <!-- Splash Screen / Audio Unlock Overlay -->
+    <aside class="splash-overlay" id="splash-screen">
+      <div class="splash-card">
+        <span class="splash-badge">Media Pembelajaran Interaktif</span>
+        <h1 class="splash-title">The Legend of Mbah Kanjeng Sepuh</h1>
+        <!-- <p class="splash-desc">Petualangan Cerita Rakyat & Pembelajaran Gunung Berapi</p> -->
+        <button class="splash-btn-start" id="btn-start-splash" title="Mulai Pembelajaran">
+          Mulai Pembelajaran
+        </button>
+      </div>
+    </aside>
+
+    <!-- Top Progress Bar -->
+    <div class="progress-strip">
+      <div id="progress-bar-fill" class="progress-strip-fill"></div>
+    </div>
+
+    <!-- Floating Top Utility HUD -->
+    <header class="top-hud">
+      <div id="slide-counter-pill" class="hud-pill">Slide 1 / 16</div>
+      <button id="btn-toggle-sfx" class="hud-btn active" title="Suara Efek (SFX)">
+        SFX
+      </button>
+      <button id="btn-toggle-fullscreen" class="hud-btn" title="Mode Layar Penuh">
+        Layar Penuh
+      </button>
+      <button id="btn-install-pwa" class="hud-btn" style="display:none;" title="Pasang ke HP / Desktop">
+        Pasang Aplikasi
+      </button>
+    </header>
+
+    <!-- Slide Stage: Contains all 16 slides -->
+    <section class="slide-stage" id="slide-stage">
+
+      <!-- SLIDE 1: Cover & Welcome -->
+      <article class="slide-frame active" data-slide="1">
+        <video class="slide-bg-img slide-bg-video" id="video-slide-1" src="assets/slides/slide_1.mp4" playsinline
+          preload="auto" poster="assets/slides/slide_1.webp"></video>
+        <div class="interactive-overlay">
+          <button class="btn-mulai-belajar" id="btn-slide1-start" title="Mulai Belajar!"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="2" title="Lanjut ke Slide 2"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 2: Intro / Start -->
+      <article class="slide-frame" data-slide="2">
+        <video class="slide-bg-img slide-bg-video" id="video-slide-2" src="assets/slides/slide_2.mp4" playsinline
+          preload="metadata" poster="assets/slides/slide_2.webp"></video>
+        <div class="interactive-overlay">
+          <button class="btn-start-cover" id="btn-slide2-start" title="Start Belajar"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="1" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="3" title="Lanjut ke Menu"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 3: Interactive Menu Hub -->
+      <article class="slide-frame" data-slide="3">
+        <img class="slide-bg-img" src="assets/slides/slide_3.webp" alt="Slide 3 Menu Interaktif" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- 6 Main Hub Interactive Buttons -->
+          <div class="menu-grid-hotspots">
+            <button class="menu-item-hotspot" data-goto="4" title="1. Discussion"></button>
+            <button class="menu-item-hotspot" data-goto="5" title="2. Purpose / Tujuan"></button>
+            <button class="menu-item-hotspot" data-goto="6" title="3. Material / Materi"></button>
+            <button class="menu-item-hotspot" data-goto="13" title="4. Video Edukasi"></button>
+            <button class="menu-item-hotspot" data-goto="14" title="5. Augmented Reality (AR)"></button>
+            <button class="menu-item-hotspot" data-goto="15" title="6. Kuis Interaktif"></button>
+          </div>
+          <!-- Corner Navigation -->
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" id="btn-open-drawer-3" title="Daftar Isi Slide"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="2" title="Kembali ke Intro"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="4" title="Lanjut ke Diskusi"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 4: Let's Discuss! -->
+      <article class="slide-frame" data-slide="4">
+        <img class="slide-bg-img" src="assets/slides/slide_4.webp" alt="Slide 4 Diskusi" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="3" title="Kembali ke Slide 3"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="5" title="Lanjut ke Slide 5"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="3" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="5" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 5: Learning Goals -->
+      <article class="slide-frame" data-slide="5">
+        <img class="slide-bg-img" src="assets/slides/slide_5.webp" alt="Slide 5 Tujuan Pembelajaran" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="4" title="Kembali ke Slide 4"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="6" title="Lanjut ke Slide 6"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="4" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="6" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 6: Meaning of Legend -->
+      <article class="slide-frame" data-slide="6">
+        <img class="slide-bg-img" src="assets/slides/slide_6.webp" alt="Slide 6 Definisi Legenda" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="5" title="Kembali ke Slide 5"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="7" title="Lanjut ke Slide 7"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="5" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="7" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 7: The Generic Structure -->
+      <article class="slide-frame" data-slide="7">
+        <img class="slide-bg-img" src="assets/slides/slide_7.webp" alt="Slide 7 Generic Structure" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="6" title="Kembali ke Slide 6"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="8" title="Lanjut ke Slide 8"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="6" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="8" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 8: Orientation Mbah Kanjeng Sepuh -->
+      <article class="slide-frame" data-slide="8">
+        <img class="slide-bg-img" src="assets/slides/slide_8.webp" alt="Slide 8 Orientation" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="7" title="Kembali ke Slide 7"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="9" title="Lanjut ke Slide 9"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="7" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="9" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 9: Complication Mbah Kanjeng Sepuh -->
+      <article class="slide-frame" data-slide="9">
+        <img class="slide-bg-img" src="assets/slides/slide_9.webp" alt="Slide 9 Complication" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="8" title="Kembali ke Slide 8"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="10" title="Lanjut ke Slide 10"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="8" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="10" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 10: Formative Airplane / Verb Game -->
+      <article class="slide-frame" data-slide="10">
+        <img class="slide-bg-img" src="assets/slides/slide_10.webp" alt="Slide 10 Formatif" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="9" title="Kembali ke Slide 9"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="11" title="Lanjut ke Slide 11"></div>
+
+          <!-- Wordwall Embedded Interactive Activity -->
+          <div class="wordwall-embed-wrapper" id="wordwall-embed-box">
+            <iframe id="wordwall-frame"
+              data-src="https://wordwall.net/id/embed/6f2aa61931a9401081cdae7b7d9c5dc3?themeId=46" src="about:blank"
+              title="Let's fly to explore the verb conjugation! - Wordwall" allowfullscreen allow="autoplay; fullscreen"
+              loading="lazy">
+            </iframe>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="9" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="11" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 11: Manfaat Gunung Berapi -->
+      <article class="slide-frame" data-slide="11">
+        <img class="slide-bg-img" src="assets/slides/slide_11.webp" alt="Slide 11 Manfaat Gunung Berapi" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="10" title="Kembali ke Slide 10"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="12" title="Lanjut ke Slide 12"></div>
+
+          <!-- Checklist interactive items -->
+          <!-- <div class="fact-hotspot-list">
+            <div class="fact-hotspot-item" data-fact="tanah" title="1. Menyuburkan tanah pertanian"></div>
+            <div class="fact-hotspot-item" data-fact="geotermal" title="2. Sumber energi panas bumi"></div>
+            <div class="fact-hotspot-item" data-fact="tambang" title="3. Bahan tambang belerang"></div>
+            <div class="fact-hotspot-item" data-fact="wisata" title="4. Objek wisata alam"></div>
+          </div> -->
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="10" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="12" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 12: Dampak Erupsi & Bahaya -->
+      <article class="slide-frame" data-slide="12">
+        <img class="slide-bg-img" src="assets/slides/slide_12.webp" alt="Slide 12 Dampak Erupsi" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="11" title="Kembali ke Slide 11"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="13" title="Lanjut ke Slide 13"></div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="11" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="13" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 13: Video Pembelajaran -->
+      <article class="slide-frame" data-slide="13">
+        <img class="slide-bg-img" src="assets/slides/slide_13.webp" alt="Slide 13 Video" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="12" title="Kembali ke Slide 12"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="14" title="Lanjut ke Slide 14"></div>
+
+          <!-- Interactive Video Frame -->
+          <div class="video-player-frame">
+            <div id="video-placeholder"
+              style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #1e1b4b, #0f172a); color:#fff; text-align:center; padding:20px;">
+              <div style="font-size:3rem; margin-bottom:12px;">🎬</div>
+              <h3 style="font-family:'Fredoka', cursive; font-size:1.4rem; color:#facc15; margin-bottom:8px;">Kisah
+                Raden Adipati Suryodiningrat</h3>
+              <p style="font-size:0.9rem; color:#94a3b8; max-width:80%; margin-bottom:16px;">
+                "Sidayu is led by Raden Adipati Suryodiningrat, a notable and wise leader in Kanjeng Sepuh."
+              </p>
+              <button class="discuss-reveal-btn" id="btn-play-video-demo">
+                <span>▶</span> Putar Narasi Suara & Teks
+              </button>
+            </div>
+          </div>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="12" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="14" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 14: Augmented Reality (3D Volcano Viewer) -->
+      <article class="slide-frame" data-slide="14">
+        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 AR" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="13" title="Kembali ke Slide 13"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="15" title="Lanjut ke Slide 15"></div>
+
+          <!-- 3D Volcano Sketchfab Container -->
+          <div class="ar-screen-container">
+            <iframe id="sketchfab-frame" title="Gunung Meletus 3D Model"
+              data-src="https://sketchfab.com/models/aafcbe2ce9744bde81ab74bdfcf249b5/embed?autostart=1"
+              src="about:blank" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking
+              execution-while-out-of-viewport execution-while-not-rendered web-share allowfullscreen loading="lazy">
+            </iframe>
+            <div class="ar-control-bar">
+              <button class="ar-action-btn" id="btn-sketchfab-toggle" title="Buka model di Sketchfab">
+                Buka di Sketchfab
+              </button>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="13" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="15" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 15: Quiz Time -->
+      <article class="slide-frame" data-slide="15">
+        <img class="slide-bg-img" src="assets/slides/slide_15.webp" alt="Slide 15 Quiz Time" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="14" title="Kembali ke Slide 14"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="16" title="Lanjut ke Slide 16"></div>
+
+          <!-- Hotspot over "MULAI PETUALANGAN ->" button in slide 15 -->
+          <button class="quiz-launch-hotspot" id="btn-launch-quiz-modal" title="Mulai Kuis 10 Soal"></button>
+
+          <!-- Interactive Quiz Viewport Modal -->
+          <div class="quiz-active-modal" id="quiz-modal-box">
+            <!-- Header -->
+            <div class="quiz-header">
+              <div class="quiz-badge" id="quiz-question-number">Soal 1 / 10</div>
+              <div class="quiz-score-pill">Skor: <span id="quiz-live-score">0</span></div>
+              <button id="btn-close-quiz"
+                style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#64748b;">✕</button>
+            </div>
+
+            <!-- Question Screen -->
+            <div class="quiz-body" id="quiz-body-container">
+              <div class="quiz-question-text" id="quiz-question-text">
+                Pertanyaan akan dimuat di sini...
+              </div>
+              <div class="quiz-options-list" id="quiz-options-list">
+                <!-- Populated dynamically -->
+              </div>
+              <div class="quiz-explanation-box" id="quiz-explanation-box">
+                <!-- Explanation text -->
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="quiz-footer" id="quiz-footer">
+              <button class="quiz-next-btn" id="btn-next-question">Soal Selanjutnya ➔</button>
+            </div>
+
+            <!-- Result Completion View -->
+            <div class="quiz-result-view" id="quiz-result-screen">
+              <div class="result-trophy">🏆</div>
+              <h2 class="result-title">Luar Biasa, Penjelajah!</h2>
+              <p style="color:#64748b; margin-bottom:8px;">Kamu telah menyelesaikan Kuis Petualangan Gunung Berapi</p>
+              <div class="result-score" id="quiz-final-score">100 / 100</div>
+              <div style="display:flex; gap:12px;">
+                <button class="quiz-next-btn" id="btn-retry-quiz">🔄 Coba Lagi</button>
+                <button class="quiz-next-btn" style="background:#4f46e5;" id="btn-finish-quiz-goto16">Selesai ➔</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="14" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="16" title="Lanjut"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 16: Closing / Terima Kasih -->
+      <article class="slide-frame" data-slide="16">
+        <img class="slide-bg-img" src="assets/slides/slide_16.webp" alt="Slide 16 Penutup" loading="lazy"
+          decoding="async">
+        <div class="interactive-overlay">
+          <button class="btn-exit-slide" id="btn-restart-app" data-goto="1" title="Exit"></button>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="15" title="Kembali"></button>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- Slide Navigator Drawer (Sidebar) -->
+    <aside class="nav-drawer-overlay" id="slide-drawer">
+      <div class="nav-drawer-content">
+        <div class="drawer-header">
+          <div class="drawer-title">📑 Daftar Isi Media</div>
+          <button class="drawer-close-btn" id="btn-close-drawer">✕</button>
+        </div>
+        <div class="drawer-slides-list" id="drawer-slides-container">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Info / Details Modal Dialog -->
+    <div class="info-modal-overlay" id="info-modal">
+      <div class="info-modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 id="modal-title" style="font-family:'Fredoka', cursive; font-size:1.3rem; color:#facc15;">Judul Info</h3>
+          <button id="btn-close-info-modal"
+            style="background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">✕</button>
+        </div>
+        <div id="modal-badge"
+          style="display:inline-block; font-size:0.75rem; background:rgba(99,102,241,0.25); color:#a5b4fc; padding:2px 8px; border-radius:8px; margin-bottom:10px;">
+          Tahap</div>
+        <p id="modal-desc" style="color:#cbd5e1; font-size:0.95rem; line-height:1.5; margin-bottom:12px;">Deskripsi
+          detail.</p>
+        <div id="modal-example"
+          style="background:rgba(255,255,255,0.06); padding:10px 14px; border-radius:10px; font-size:0.88rem; color:#fde047; border-left:3px solid #facc15;">
+          Contoh
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Toast Notification -->
+    <div class="toast-msg" id="toast-notification">Pemberitahuan</div>
+
+  </main>
+
+  <!-- Application Logic Modules -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+
+</html>

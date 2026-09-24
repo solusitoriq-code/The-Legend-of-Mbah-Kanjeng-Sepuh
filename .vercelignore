@@ -1,0 +1,7 @@
+server.js
+assets/slides/*.png
+js/volcano3d.js
+.git
+.agents
+AGENTS.md
+README.md
