@@ -153,3 +153,19 @@ export const GENERIC_STRUCTURES = {
     example: "Contoh: Nilai keteladanan kepemimpinan yang jujur, berilmu, dan mencintai kesejahteraan rakyat."
   }
 };
+
+// Data Glosarium Materi & Sains Vulkanik
+export const GLOSARIUM_DATA = [
+  { term: 'Legend', category: 'Narrative', def: 'Cerita rakyat tradisional dari masa lalu yang mengisahkan tokoh atau peristiwa lokal sarat pesan moral.' },
+  { term: 'Orientation', category: 'Narrative', def: 'Bagian pembuka teks naratif yang mengenalkan tokoh, latar waktu, dan tempat berlangsungnya cerita.' },
+  { term: 'Complication', category: 'Narrative', def: 'Bagian tengah yang menceritakan munculnya krisis, konflik, atau tantangan utama yang dihadapi tokoh.' },
+  { term: 'Resolution', category: 'Narrative', def: 'Tahap penyelesaian di mana tokoh utama berhasil mengatasi krisis dan memecahkan konflik yang terjadi.' },
+  { term: 'Coda', category: 'Narrative', def: 'Bagian penutup cerita yang berisi kesimpulan pesan moral, kearifan lokal, dan nilai keteladanan bagi pembaca.' },
+  { term: 'Action Verbs', category: 'Grammar', def: 'Kata kerja yang menyatakan tindakan fisik nyata secara langsung (contoh: build, dig, confront, protect).' },
+  { term: 'Temporal Connectives', category: 'Grammar', def: 'Kata atau frasa penghubung penanda urutan kronologis waktu (contoh: at daybreak, after that, then).' },
+  { term: 'Magma', category: 'IPA / Vulkanik', def: 'Cairan batuan pijar bersuhu sangat tinggi yang masih berada di dalam perut atau mantel bumi.' },
+  { term: 'Lava', category: 'IPA / Vulkanik', def: 'Magma cair panas yang telah keluar menembus ke permukaan lereng gunung saat erupsi berlangsung.' },
+  { term: 'Geotermal', category: 'IPA / Vulkanik', def: 'Pembangkit energi ramah lingkungan yang memanfaatkan uap panas alami dari reservoir vulkanik bawah tanah.' },
+  { term: 'Belerang (Sulfur)', category: 'IPA / Vulkanik', def: 'Mineral vulkanik alami berwarna kuning cerah di sekitar kawah yang dimanfaatkan untuk industri pupuk dan obat.' },
+  { term: 'Raden Adipati Suryodiningrat', category: 'Sejarah', def: 'Adipati Sidayu Gresik abad ke-19 yang arif, bijaksana, dan dikenal oleh masyarakat luas sebagai Mbah Kanjeng Sepuh.' }
+];

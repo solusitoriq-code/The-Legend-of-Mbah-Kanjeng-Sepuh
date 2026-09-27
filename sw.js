@@ -1,13 +1,18 @@
-const CACHE_NAME = 'materi-interaktif-v12';
+const CACHE_NAME = 'materi-interaktif-v17';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
-  './css/style.css?v=12',
+  './css/style.css?v=17',
   './js/app.js',
-  './js/app.js?v=12',
+  './js/app.js?v=17',
   './js/audio.js',
+  './js/audio.js?v=17',
+  './js/data-service.js',
+  './js/data-service.js?v=17',
   './js/quiz-data.js',
+  './js/quiz-data.js?v=17',
+  './data/materi_evaluasi.json',
   './manifest.json',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',

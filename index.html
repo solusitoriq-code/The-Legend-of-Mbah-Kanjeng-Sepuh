@@ -23,7 +23,7 @@
     rel="stylesheet">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=17">
 </head>
 
 <body>
@@ -31,17 +31,106 @@
   <!-- Main Presentation 16:9 Viewport -->
   <main id="app-container">
 
-    <!-- Splash Screen / Audio Unlock Overlay -->
+    <!-- Splash Screen / Audio Unlock & NISN Validation Overlay -->
     <aside class="splash-overlay" id="splash-screen">
       <div class="splash-card">
         <span class="splash-badge">Media Pembelajaran Interaktif</span>
         <h1 class="splash-title">The Legend of Mbah Kanjeng Sepuh</h1>
-        <!-- <p class="splash-desc">Petualangan Cerita Rakyat & Pembelajaran Gunung Berapi</p> -->
-        <button class="splash-btn-start" id="btn-start-splash" title="Mulai Pembelajaran">
-          Mulai Pembelajaran
-        </button>
+        <p class="splash-subtitle">Masukkan NIS atau NISN Anda untuk memulai evaluasi</p>
+
+        <!-- Form Input & Validasi NIS/NISN -->
+        <div class="splash-nisn-box">
+          <div class="splash-input-group">
+            <input type="text" id="input-nisn" class="splash-input-nisn" placeholder="" maxlength="15" inputmode="numeric" autocomplete="off">
+            <button type="button" class="splash-btn-check" id="btn-check-nisn" title="Periksa NIS atau NISN">Periksa</button>
+          </div>
+          <div class="splash-feedback" id="splash-nisn-feedback"></div>
+        </div>
+
+        <!-- Info Siswa Terverifikasi -->
+        <div class="splash-student-card" id="splash-student-card" style="display: none;">
+          <div class="student-card-header">Siswa Terverifikasi</div>
+          <div class="student-card-name" id="student-name">-</div>
+          <div class="student-card-meta">
+            <span>NIS: <b id="student-nis">-</b></span>
+            <span>NISN: <b id="student-nisn">-</b></span>
+            <span>Kelas: <b id="student-class">-</b></span>
+          </div>
+        </div>
+
+        <div class="splash-action-group" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <button class="splash-btn-start" id="btn-start-splash" style="display: none;" title="Mulai Pretest">
+            Mulai Pretest ➔
+          </button>
+          <button type="button" class="splash-btn-retake" id="btn-retake-pretest" style="display: none;" title="Kerjakan Ulang Pretest">
+            Kerjakan Ulang Pretest
+          </button>
+        </div>
       </div>
     </aside>
+
+    <!-- Pretest Interactive Modal Dialog (Fase 3) -->
+    <div class="pretest-modal-overlay" id="pretest-modal" style="display: none;" aria-modal="true" role="dialog" aria-labelledby="pretest-heading">
+      <div class="pretest-modal-card">
+        <!-- Pretest Active Quiz View -->
+        <div class="pretest-quiz-view" id="pretest-quiz-view">
+          <!-- Header -->
+          <div class="pretest-header">
+            <div class="pretest-meta-info">
+              <span class="pretest-badge">Evaluasi Awal</span>
+              <span class="pretest-counter" id="pretest-counter">Soal 1 dari 5</span>
+            </div>
+            <div class="pretest-student-tag" id="pretest-student-tag">-</div>
+          </div>
+
+          <!-- Progress Bar inside Pretest Modal -->
+          <div class="pretest-progress-track">
+            <div class="pretest-progress-fill" id="pretest-progress-fill" style="width: 20%;"></div>
+          </div>
+
+          <!-- Body / Question & Options -->
+          <div class="pretest-body">
+            <div class="pretest-question-box">
+              <p class="pretest-question-text" id="pretest-question-text">
+                Memuat pertanyaan pretest...
+              </p>
+            </div>
+            <div class="pretest-options-list" id="pretest-options-list">
+              <!-- Dynamically populated options A, B, C, D -->
+            </div>
+          </div>
+
+          <!-- Footer Navigation -->
+          <div class="pretest-footer">
+            <div class="pretest-hint" id="pretest-hint">Pilih salah satu jawaban untuk melanjutkan.</div>
+            <button type="button" class="pretest-next-btn" id="btn-pretest-next" disabled>
+              Soal Selanjutnya ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- Pretest Result Completion View -->
+        <div class="pretest-result-view" id="pretest-result-view" style="display: none;">
+          <span class="pretest-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
+            Evaluasi Selesai
+          </span>
+          <h2 class="pretest-result-title" id="pretest-heading">Hasil Evaluasi Pretest</h2>
+          <p class="pretest-result-desc">
+            Nilai diagnostik awal Anda telah tercatat ke sistem. Silakan lanjutkan untuk mempelajari modul interaktif.
+          </p>
+
+          <div class="pretest-score-box">
+            <span class="pretest-score-label">Skor Pretest</span>
+            <div class="pretest-score-num" id="pretest-final-score">0 / 100</div>
+            <div class="pretest-score-sub" id="pretest-score-detail">Jawaban benar: 0 dari 5 soal</div>
+          </div>
+
+          <button type="button" class="pretest-finish-btn" id="btn-pretest-finish">
+            Lanjut ke Materi Pembelajaran ➔
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Top Progress Bar -->
     <div class="progress-strip">
@@ -99,8 +188,9 @@
 
       <!-- SLIDE 1: Cover & Welcome -->
       <article class="slide-frame active" data-slide="1">
-        <video class="slide-bg-img slide-bg-video" id="video-slide-1" src="assets/slides/slide_1.mp4" playsinline
-          preload="auto" poster="assets/slides/slide_1.webp"></video>
+        <video class="slide-bg-video" id="video-slide-1" playsinline loop muted preload="auto" poster="assets/slides/slide_1.webp">
+          <source src="assets/slides/slide_1.mp4" type="video/mp4">
+        </video>
         <div class="interactive-overlay">
           <button class="btn-mulai-belajar" id="btn-slide1-start" title="Mulai Belajar!"></button>
           <button class="nav-corner-btn btn-nav-next" data-goto="2" title="Lanjut ke Slide 2"></button>
@@ -109,8 +199,9 @@
 
       <!-- SLIDE 2: Intro / Start -->
       <article class="slide-frame" data-slide="2">
-        <video class="slide-bg-img slide-bg-video" id="video-slide-2" src="assets/slides/slide_2.mp4" playsinline
-          preload="metadata" poster="assets/slides/slide_2.webp"></video>
+        <video class="slide-bg-video" id="video-slide-2" playsinline loop muted preload="metadata" poster="assets/slides/slide_2.webp">
+          <source src="assets/slides/slide_2.mp4" type="video/mp4">
+        </video>
         <div class="interactive-overlay">
           <button class="btn-start-cover" id="btn-slide2-start" title="Start Belajar"></button>
           <button class="nav-corner-btn btn-nav-prev" data-goto="1" title="Kembali"></button>
@@ -125,12 +216,18 @@
         <div class="interactive-overlay">
           <!-- 6 Main Hub Interactive Buttons -->
           <div class="menu-grid-hotspots">
-            <button class="menu-item-hotspot" data-goto="4" title="1. Discussion"></button>
-            <button class="menu-item-hotspot" data-goto="5" title="2. Purpose / Tujuan"></button>
-            <button class="menu-item-hotspot" data-goto="6" title="3. Material / Materi"></button>
-            <button class="menu-item-hotspot" data-goto="13" title="4. Video Edukasi"></button>
-            <button class="menu-item-hotspot" data-goto="14" title="5. Augmented Reality (AR)"></button>
-            <button class="menu-item-hotspot" data-goto="15" title="6. Kuis Interaktif"></button>
+            <!-- Kolom 1 Baris 1: Game -> Slide 4 -->
+            <button class="menu-item-hotspot btn-menu-game btn_game btn-game" data-goto="4" title="1. Discussion"></button>
+            <!-- Kolom 1 Baris 2: Material -> Slide 6 -->
+            <button class="menu-item-hotspot btn-menu-material btn_material btn-material" data-goto="6" title="2. Material"></button>
+            <!-- Kolom 1 Baris 3: Augmented Reality (AR) -> Slide 14 -->
+            <button class="menu-item-hotspot btn-menu-ar btn_ar btn-ar" data-goto="14" title="3. Augmented Reality (AR)"></button>
+            <!-- Kolom 2 Baris 1: Kuis Interaktif -> Slide 5 -->
+            <button class="menu-item-hotspot btn-menu-quiz btn_quiz btn-quiz" data-goto="5" title="4. Purpose"></button>
+            <!-- Kolom 2 Baris 2: Video Edukasi -> Slide 13 -->
+            <button class="menu-item-hotspot btn-menu-video btn_video btn-video" data-goto="13" title="5. Video Edukasi"></button>
+            <!-- Kolom 2 Baris 3: Glosarium -> Slide 15 -->
+            <button class="menu-item-hotspot btn-menu-glosarium btn_glosarium btn-glosarium" data-goto="15" title="6. Kuis Interaktif"></button>
           </div>
           <!-- Corner Navigation -->
           <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
@@ -300,30 +397,22 @@
         </div>
       </article>
 
-      <!-- SLIDE 13: Video Pembelajaran -->
+      <!-- SLIDE 13: Kisah Raden Suryodiningrat -->
       <article class="slide-frame" data-slide="13">
-        <img class="slide-bg-img" src="assets/slides/slide_13.webp" alt="Slide 13 Video" loading="lazy"
+        <img class="slide-bg-img" src="assets/slides/slide_13.webp" alt="Slide 13 Kisah Raden Suryodiningrat" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
           <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
           <div class="slide-half-nav slide-half-prev" data-goto="12" title="Kembali ke Slide 12"></div>
           <div class="slide-half-nav slide-half-next" data-goto="14" title="Lanjut ke Slide 14"></div>
 
-          <!-- Interactive Video Frame -->
-          <div class="video-player-frame">
-            <div id="video-placeholder"
-              style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #1e1b4b, #0f172a); color:#fff; text-align:center; padding:20px;">
-              <div style="font-size:3rem; margin-bottom:12px;">🎬</div>
-              <h3 style="font-family:'Fredoka', cursive; font-size:1.4rem; color:#facc15; margin-bottom:8px;">Kisah
-                Raden Adipati Suryodiningrat</h3>
-              <p style="font-size:0.9rem; color:#94a3b8; max-width:80%; margin-bottom:16px;">
-                "Sidayu is led by Raden Adipati Suryodiningrat, a notable and wise leader in Kanjeng Sepuh."
-              </p>
-              <button class="discuss-reveal-btn" id="btn-play-video-demo">
-                <span>▶</span> Putar Narasi Suara & Teks
-              </button>
-            </div>
+          <!-- Narasi Audio Ringkas -->
+          <div class="slide13-narasi-bar">
+            <button class="discuss-reveal-btn" id="btn-play-video-demo">
+              <span>▶</span> Dengarkan Narasi Suara
+            </button>
           </div>
+
           <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
           <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
           <button class="nav-corner-btn btn-nav-prev" data-goto="12" title="Kembali"></button>
@@ -331,32 +420,52 @@
         </div>
       </article>
 
-      <!-- SLIDE 14: Augmented Reality (3D Volcano Viewer) -->
+      <!-- SLIDE 14: Edukasi Erupsi Gunung Berapi -->
       <article class="slide-frame" data-slide="14">
-        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 AR" loading="lazy" decoding="async">
+        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 Edukasi Gunung Berapi" loading="lazy" decoding="async">
         <div class="interactive-overlay">
           <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
           <div class="slide-half-nav slide-half-prev" data-goto="13" title="Kembali ke Slide 13"></div>
           <div class="slide-half-nav slide-half-next" data-goto="15" title="Lanjut ke Slide 15"></div>
 
-          <!-- 3D Volcano Sketchfab Container -->
-          <div class="ar-screen-container">
-            <iframe id="sketchfab-frame" title="Gunung Meletus 3D Model"
-              data-src="https://sketchfab.com/models/aafcbe2ce9744bde81ab74bdfcf249b5/embed?autostart=1"
-              src="about:blank" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking
-              execution-while-out-of-viewport execution-while-not-rendered web-share allowfullscreen loading="lazy">
-            </iframe>
-            <div class="ar-control-bar">
-              <button class="ar-action-btn" id="btn-sketchfab-toggle" title="Buka model di Sketchfab">
-                Buka di Sketchfab
-              </button>
+          <!-- Educational Whiteboard Content (Pengganti AR) -->
+          <div class="slide14-edu-board">
+            <div class="edu-board-header">
+              <span class="edu-board-tag">Materi Pengayaan</span>
+              <h3 class="edu-board-title">Karakteristik & Manfaat Vulkanik</h3>
+            </div>
+            <div class="edu-board-grid">
+              <div class="edu-point-item">
+                <div class="edu-point-num">1</div>
+                <div class="edu-point-body">
+                  <strong>Magma & Lava:</strong> Magma tersimpan panas di dalam kerak bumi; setelah keluar ke permukaan lereng gunung disebut <em>Lava</em>.
+                </div>
+              </div>
+              <div class="edu-point-item">
+                <div class="edu-point-num">2</div>
+                <div class="edu-point-body">
+                  <strong>Tanah Subur:</strong> Endapan abu vulkanik kaya unsur hara mineral penting yang menyuburkan lahan pertanian rakyat.
+                </div>
+              </div>
+              <div class="edu-point-item">
+                <div class="edu-point-num">3</div>
+                <div class="edu-point-body">
+                  <strong>Energi Geotermal:</strong> Uap panas bumi dari sistem vulkanik dimanfaatkan sebagai pembangkit energi ramah lingkungan.
+                </div>
+              </div>
+              <div class="edu-point-item">
+                <div class="edu-point-num">4</div>
+                <div class="edu-point-body">
+                  <strong>Mitigasi Bencana:</strong> Memahami arah luncuran awan panas dan mematuhi peta jalur evakuasi saat status siaga erupsi.
+                </div>
+              </div>
             </div>
           </div>
 
           <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
           <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
           <button class="nav-corner-btn btn-nav-prev" data-goto="13" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="15" title="Lanjut"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="15" title="Lanjut ke Kuis"></button>
         </div>
       </article>
 
@@ -370,45 +479,215 @@
           <div class="slide-half-nav slide-half-next" data-goto="16" title="Lanjut ke Slide 16"></div>
 
           <!-- Hotspot over "MULAI PETUALANGAN ->" button in slide 15 -->
-          <button class="quiz-launch-hotspot" id="btn-launch-quiz-modal" title="Mulai Kuis 10 Soal"></button>
+          <button class="quiz-launch-hotspot" id="btn-launch-quiz-modal" title="Mulai Kuis Evaluasi (Post-test 15 Soal)"></button>
+          <button type="button" class="btn-slide15-leaderboard" id="btn-slide15-leaderboard" title="Lihat Papan Peringkat">
+            Papan Peringkat (Leaderboard)
+          </button>
 
-          <!-- Interactive Quiz Viewport Modal -->
-          <div class="quiz-active-modal" id="quiz-modal-box">
-            <!-- Header -->
-            <div class="quiz-header">
-              <div class="quiz-badge" id="quiz-question-number">Soal 1 / 10</div>
-              <div class="quiz-score-pill">Skor: <span id="quiz-live-score">0</span></div>
-              <button id="btn-close-quiz"
-                style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#64748b;">✕</button>
-            </div>
+          <!-- Interactive Post-test Viewport Modal (Fase 5) -->
+          <div class="quiz-active-modal" id="quiz-modal-box" aria-modal="true" role="dialog" aria-labelledby="posttest-heading">
+            <div class="posttest-modal-card">
+              <!-- Active Quiz View -->
+              <div class="posttest-quiz-view" id="posttest-quiz-view">
+                <!-- Header -->
+                <div class="posttest-header">
+                  <div class="posttest-meta-info">
+                    <span class="posttest-badge">Evaluasi Akhir</span>
+                    <span class="posttest-type-badge" id="posttest-type-badge">Pilihan Ganda</span>
+                    <span class="posttest-counter" id="posttest-counter">Soal 1 dari 15</span>
+                  </div>
+                  <div class="posttest-student-tag" id="posttest-student-tag">-</div>
+                  <button type="button" class="posttest-close-btn" id="btn-close-quiz" title="Tutup Kuis">✕</button>
+                </div>
 
-            <!-- Question Screen -->
-            <div class="quiz-body" id="quiz-body-container">
-              <div class="quiz-question-text" id="quiz-question-text">
-                Pertanyaan akan dimuat di sini...
+                <!-- Progress Bar Track -->
+                <div class="posttest-progress-track">
+                  <div class="posttest-progress-fill" id="posttest-progress-fill" style="width: 6.67%;"></div>
+                </div>
+
+                <!-- Body / Question & Interaction Area -->
+                <div class="posttest-body" id="posttest-body">
+                  <div class="posttest-question-box">
+                    <p class="posttest-question-text" id="posttest-question-text">
+                      Memuat pertanyaan post-test...
+                    </p>
+                  </div>
+
+                  <!-- Container Soal Pilihan Ganda (MCQ: Soal 1-10) -->
+                  <div class="posttest-mcq-container" id="posttest-mcq-container">
+                    <div class="posttest-options-list" id="posttest-options-list">
+                      <!-- Opsi A, B, C, D diisi dinamis via JavaScript -->
+                    </div>
+                  </div>
+
+                  <!-- Container Soal Mencocokkan (Matching: Soal 11-15) -->
+                  <div class="posttest-matching-container" id="posttest-matching-container" style="display: none;">
+                    <div class="matching-instruction-bar" id="posttest-matching-hint">
+                      Ketuk satu kartu di kolom kiri, lalu ketuk pasangannya di kolom kanan.
+                    </div>
+                    <div class="matching-grid-wrapper">
+                      <!-- Kolom Kiri: Premis / Konsep Tetap -->
+                      <div class="matching-column" id="matching-col-left">
+                        <div class="matching-col-title">Premis / Konsep</div>
+                        <div class="matching-items-list" id="matching-items-left">
+                          <!-- Kartu kiri diisi dinamis -->
+                        </div>
+                      </div>
+                      <!-- Kolom Kanan: Target Pasangan Diacak -->
+                      <div class="matching-column" id="matching-col-right">
+                        <div class="matching-col-title">Pasangan Target</div>
+                        <div class="matching-items-list" id="matching-items-right">
+                          <!-- Kartu kanan diisi dinamis -->
+                        </div>
+                      </div>
+                    </div>
+                    <div class="matching-actions-bar">
+                      <div class="matching-status-pill" id="matching-status-text">Terpasang: 0 / 4 Pasangan</div>
+                      <div class="matching-btn-group">
+                        <button type="button" class="matching-btn-reset" id="btn-reset-matching">Reset Pasangan</button>
+                        <button type="button" class="matching-btn-verify" id="btn-verify-matching" disabled>Periksa Pasangan</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Kotak Penjelasan / Pembahasan Edukatif -->
+                  <div class="posttest-explanation-box" id="posttest-explanation-box" style="display: none;">
+                    <!-- Pembahasan materi akan muncul di sini -->
+                  </div>
+                </div>
+
+                <!-- Footer Navigation -->
+                <div class="posttest-footer" id="posttest-footer">
+                  <div class="posttest-hint" id="posttest-hint">Pilih salah satu jawaban untuk melanjutkan.</div>
+                  <button type="button" class="posttest-next-btn" id="btn-next-question" disabled>
+                    Soal Selanjutnya ➔
+                  </button>
+                </div>
               </div>
-              <div class="quiz-options-list" id="quiz-options-list">
-                <!-- Populated dynamically -->
-              </div>
-              <div class="quiz-explanation-box" id="quiz-explanation-box">
-                <!-- Explanation text -->
-              </div>
-            </div>
 
-            <!-- Footer -->
-            <div class="quiz-footer" id="quiz-footer">
-              <button class="quiz-next-btn" id="btn-next-question">Soal Selanjutnya ➔</button>
-            </div>
+              <!-- Result Completion & Leaderboard View (Fase 6) -->
+              <div class="posttest-result-view" id="posttest-result-screen" style="display: none;">
+                <span class="posttest-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
+                  Evaluasi Akhir Selesai
+                </span>
+                <h2 class="posttest-result-title" id="posttest-heading">Hasil Evaluasi & Papan Peringkat</h2>
+                <p class="posttest-result-desc">
+                  Selamat! Anda telah menyelesaikan seluruh rangkaian evaluasi materi Mbah Kanjeng Sepuh & Vulkanologi.
+                </p>
 
-            <!-- Result Completion View -->
-            <div class="quiz-result-view" id="quiz-result-screen">
-              <div class="result-trophy">🏆</div>
-              <h2 class="result-title">Luar Biasa, Penjelajah!</h2>
-              <p style="color:#64748b; margin-bottom:8px;">Kamu telah menyelesaikan Kuis Petualangan Gunung Berapi</p>
-              <div class="result-score" id="quiz-final-score">100 / 100</div>
-              <div style="display:flex; gap:12px;">
-                <button class="quiz-next-btn" id="btn-retry-quiz">🔄 Coba Lagi</button>
-                <button class="quiz-next-btn" style="background:#4f46e5;" id="btn-finish-quiz-goto16">Selesai ➔</button>
+                <!-- Identitas Siswa -->
+                <div class="posttest-student-summary" id="posttest-student-summary">
+                  <span id="posttest-summary-name">-</span> • Kelas <span id="posttest-summary-class">-</span> (NISN: <span id="posttest-summary-nisn">-</span>)
+                </div>
+
+                <!-- Navigation Tabs (Fase 6) -->
+                <div class="posttest-nav-tabs" role="tablist">
+                  <button type="button" class="posttest-tab-btn active" id="tab-btn-summary" role="tab" aria-selected="true" aria-controls="tab-pane-summary">
+                    Ringkasan Nilai & N-Gain
+                  </button>
+                  <button type="button" class="posttest-tab-btn" id="tab-btn-leaderboard" role="tab" aria-selected="false" aria-controls="tab-pane-leaderboard">
+                    Papan Peringkat (Leaderboard)
+                  </button>
+                </div>
+
+                <!-- Tab Pane 1: Ringkasan & Komparasi N-Gain -->
+                <div class="posttest-tab-pane active" id="tab-pane-summary" role="tabpanel">
+                  <!-- Skor Akhir -->
+                  <div class="posttest-score-box">
+                    <span class="posttest-score-label">Skor Akhir Post-test</span>
+                    <div class="posttest-score-num" id="posttest-final-score">0 / 100</div>
+                    <div class="posttest-score-breakdown" id="posttest-score-breakdown">
+                      Pilihan Ganda: 0 / 10 • Mencocokkan: 0 / 5
+                    </div>
+                  </div>
+
+                  <!-- Komparasi Pretest vs Posttest vs N-Gain -->
+                  <div class="posttest-comparison-grid">
+                    <div class="comparison-card">
+                      <span class="comp-label">Nilai Pretest</span>
+                      <span class="comp-val" id="posttest-comp-pretest">-</span>
+                    </div>
+                    <div class="comparison-card">
+                      <span class="comp-label">Nilai Post-test</span>
+                      <span class="comp-val" id="posttest-comp-posttest">-</span>
+                    </div>
+                    <div class="comparison-card highlight">
+                      <span class="comp-label">Peningkatan (+Δ)</span>
+                      <span class="comp-val" id="posttest-comp-gain">+0</span>
+                    </div>
+                    <div class="comparison-card ngain-card">
+                      <span class="comp-label">N-Gain Score</span>
+                      <span class="comp-val" id="posttest-comp-ngain">0.00</span>
+                      <span class="comp-sub" id="posttest-comp-ngain-badge">Rendah</span>
+                    </div>
+                  </div>
+
+                  <!-- Analisis N-Gain Hake -->
+                  <div class="ngain-analysis-card">
+                    <div class="ngain-header">
+                      <div class="ngain-title">Analisis Efektivitas Pembelajaran (Hake's N-Gain)</div>
+                      <span class="ngain-category-pill" id="ngain-category-pill">Sedang</span>
+                    </div>
+                    <p class="ngain-desc" id="ngain-desc-text">
+                      Peningkatan pemahaman materi tergolong efektif berdasarkan perbandingan skor pretest dan post-test.
+                    </p>
+                    <div class="ngain-progress-wrap">
+                      <div class="ngain-progress-bar">
+                        <div class="ngain-progress-fill" id="ngain-progress-fill" style="width: 0%;"></div>
+                      </div>
+                      <div class="ngain-progress-labels">
+                        <span>&lt; 0.30 (Rendah)</span>
+                        <span>0.30 - 0.70 (Sedang)</span>
+                        <span>&ge; 0.70 (Tinggi)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="button" class="posttest-btn-view-leaderboard" id="btn-view-leaderboard-tab">
+                    Lihat Posisi di Papan Peringkat ➔
+                  </button>
+                </div>
+
+                <!-- Tab Pane 2: Papan Peringkat (Leaderboard) -->
+                <div class="posttest-tab-pane" id="tab-pane-leaderboard" role="tabpanel" style="display: none;">
+                  <div class="leaderboard-meta-strip">
+                    <div class="leaderboard-rank-status" id="leaderboard-my-status">
+                      Posisi Anda: <strong id="my-rank-text">Peringkat -</strong>
+                    </div>
+                    <div class="leaderboard-stats-pills">
+                      <span class="meta-pill" id="leaderboard-avg-pill">Rata-rata: -</span>
+                      <span class="meta-pill" id="leaderboard-top-pill">Tertinggi: -</span>
+                    </div>
+                  </div>
+
+                  <div class="leaderboard-table-wrapper">
+                    <table class="leaderboard-table">
+                      <thead>
+                        <tr>
+                          <th class="col-rank">Peringkat</th>
+                          <th class="col-name">Nama Siswa</th>
+                          <th class="col-pre">Pretest</th>
+                          <th class="col-post">Post-test</th>
+                          <th class="col-gain">Peningkatan (+Δ)</th>
+                          <th class="col-ngain">N-Gain</th>
+                        </tr>
+                      </thead>
+                      <tbody id="leaderboard-table-body">
+                        <!-- Populated dynamically by JS -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Tombol Aksi Akhir -->
+                <div class="posttest-action-buttons">
+                  <button type="button" class="posttest-btn-retry" id="btn-retry-quiz">
+                    Kerjakan Ulang Post-test
+                  </button>
+                  <button type="button" class="posttest-btn-finish" id="btn-finish-quiz-goto16">
+                    Selesai & Ke Halaman Penutup ➔
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -426,6 +705,9 @@
           decoding="async">
         <div class="interactive-overlay">
           <button class="btn-exit-slide" id="btn-restart-app" data-goto="1" title="Exit"></button>
+          <button type="button" class="btn-slide16-leaderboard" id="btn-slide16-leaderboard" title="Lihat Papan Peringkat">
+            Lihat Papan Peringkat
+          </button>
           <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
           <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
           <button class="nav-corner-btn btn-nav-prev" data-goto="15" title="Kembali"></button>
@@ -438,8 +720,16 @@
     <aside class="nav-drawer-overlay" id="slide-drawer">
       <div class="nav-drawer-content">
         <div class="drawer-header">
-          <div class="drawer-title">📑 Daftar Isi Media</div>
-          <button class="drawer-close-btn" id="btn-close-drawer">✕</button>
+          <div>
+            <div class="drawer-title">📑 Daftar Isi Media</div>
+            <div class="drawer-progress-status" id="drawer-progress-text">Progres: 1 / 14 Slide</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="drawer-btn-leaderboard" id="btn-drawer-leaderboard" title="Buka Papan Peringkat">
+              Papan Peringkat
+            </button>
+            <button class="drawer-close-btn" id="btn-close-drawer">✕</button>
+          </div>
         </div>
         <div class="drawer-slides-list" id="drawer-slides-container">
           <!-- Populated by JavaScript -->
@@ -473,7 +763,7 @@
   </main>
 
   <!-- Application Logic Modules -->
-  <script type="module" src="js/app.js?v=12"></script>
+  <script type="module" src="js/app.js?v=17"></script>
 
 </body>
 

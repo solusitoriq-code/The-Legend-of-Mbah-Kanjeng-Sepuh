@@ -1,5 +1,6 @@
-import { sound } from './audio.js';
-import { QUIZ_VOLCANO, FORMATIVE_GAME, GENERIC_STRUCTURES } from './quiz-data.js';
+import { sound } from './audio.js?v=17';
+import { dataService } from './data-service.js?v=17';
+import { FORMATIVE_GAME, GENERIC_STRUCTURES } from './quiz-data.js?v=17';
 
 // Metadata untuk Daftar Isi Slide Navigator
 const SLIDE_DIRECTORY = [
@@ -15,9 +16,9 @@ const SLIDE_DIRECTORY = [
   { id: 10, title: 'Formative Game: Verb Challenge' },
   { id: 11, title: 'IPA: Manfaat Gunung Berapi' },
   { id: 12, title: 'IPA: Dampak Erupsi & Mitigasi' },
-  { id: 13, title: 'Video: Raden Suryodiningrat' },
-  { id: 14, title: 'Augmented Reality & 3D Volcano' },
-  { id: 15, title: 'Kuis Evaluasi: 10 Soal Berapi' },
+  { id: 13, title: 'Kisah: Raden Suryodiningrat' },
+  { id: 14, title: 'Edukasi: Erupsi & Vulkanik' },
+  { id: 15, title: 'Kuis Evaluasi (Post-test)' },
   { id: 16, title: 'Penutup & Profil Pengembang' }
 ];
 
@@ -27,10 +28,18 @@ class InteractivePresentationApp {
     this.totalSlides = 16;
     this.deferredPrompt = null;
 
-    // Quiz State
-    this.quizIndex = 0;
-    this.quizScore = 0;
-    this.quizAnswered = false;
+    // Pelacak Progres Materi (Fase 4 Guided Navigation)
+    this.maxSlideVisited = dataService.getMaxSlideVisited();
+
+    // Post-test Evaluasi Akhir State (Fase 5)
+    this.posttestQuestions = [];
+    this.posttestIndex = 0;
+    this.posttestAnswers = {};
+    this.posttestScore = null;
+    this.posttestActiveLeftId = null;
+    this.posttestTempPairs = {};
+    this.posttestAnswered = false;
+    this.currentMatchingData = null;
 
     // Formative Mini Game State
     this.gameRound = 0;
@@ -40,12 +49,19 @@ class InteractivePresentationApp {
     this.portraitRotationAngle = 90;
     this.isPortraitMode = false;
 
+    // Pretest State (Fase 3)
+    this.pretestQuestions = [];
+    this.pretestIndex = 0;
+    this.pretestAnswers = {};
+    this.pretestScore = null;
+
     this.init();
   }
 
   init() {
     this.cacheDOM();
     this.initOrientationHandler();
+    this.updateLockUI();
     this.renderDrawerList();
     this.bindEvents();
     this.goToSlide(1, false);
@@ -58,17 +74,30 @@ class InteractivePresentationApp {
     this.progressBar = document.getElementById('progress-bar-fill');
     this.counterPill = document.getElementById('slide-counter-pill');
 
-    // Splash Screen
+    // Splash Screen & NIS/NISN Verification Elements
     this.splashOverlay = document.getElementById('splash-screen');
     this.btnStartSplash = document.getElementById('btn-start-splash');
+    this.inputNISN = document.getElementById('input-nisn');
+    this.btnCheckNISN = document.getElementById('btn-check-nisn');
+    this.feedbackNISN = document.getElementById('splash-nisn-feedback');
+    this.studentCard = document.getElementById('splash-student-card');
+    this.studentName = document.getElementById('student-name');
+    this.studentNIS = document.getElementById('student-nis');
+    this.studentNISN = document.getElementById('student-nisn');
+    this.studentClass = document.getElementById('student-class');
 
-    // Video Elements (Slide 1 & Slide 2)
+    // Video Elements (Opsional jika masih ada)
     this.videoSlide1 = document.getElementById('video-slide-1');
     this.videoSlide2 = document.getElementById('video-slide-2');
+
+    // Slide 3 Hotspot Quiz & Lock Indicator (Fase 4)
+    this.hotspotMenuQuiz = document.getElementById('hotspot-menu-quiz');
+    this.hotspotQuizLockBadge = document.getElementById('hotspot-quiz-lock-badge');
 
     // Drawer
     this.drawer = document.getElementById('slide-drawer');
     this.drawerSlidesContainer = document.getElementById('drawer-slides-container');
+    this.drawerProgressText = document.getElementById('drawer-progress-text');
     this.btnCloseDrawer = document.getElementById('btn-close-drawer');
 
     // Info Modal
@@ -78,6 +107,13 @@ class InteractivePresentationApp {
     this.modalDesc = document.getElementById('modal-desc');
     this.modalExample = document.getElementById('modal-example');
     this.btnCloseInfoModal = document.getElementById('btn-close-info-modal');
+
+    // Glosarium Modal
+    this.glosariumModal = document.getElementById('glosarium-modal');
+    this.btnOpenGlosarium = document.getElementById('btn-menu-glosarium');
+    this.btnCloseGlosarium = document.getElementById('btn-close-glosarium');
+    this.glosariumSearch = document.getElementById('glosarium-search');
+    this.glosariumGrid = document.getElementById('glosarium-items-grid');
 
     // HUD Buttons & Quick Menu
     this.topHUD = document.getElementById('top-hud');
@@ -100,39 +136,135 @@ class InteractivePresentationApp {
     this.gameOptionsContainer = document.getElementById('game-options-container');
     this.btnStartVerbGame = document.getElementById('btn-start-verb-game');
 
-    // Quiz Elements
+    // Post-test Elements (Fase 5)
     this.quizModal = document.getElementById('quiz-modal-box');
     this.btnLaunchQuiz = document.getElementById('btn-launch-quiz-modal');
     this.btnCloseQuiz = document.getElementById('btn-close-quiz');
-    this.quizBody = document.getElementById('quiz-body-container');
-    this.quizFooter = document.getElementById('quiz-footer');
-    this.quizResultScreen = document.getElementById('quiz-result-screen');
-    this.quizQuestionNumber = document.getElementById('quiz-question-number');
-    this.quizLiveScore = document.getElementById('quiz-live-score');
-    this.quizQuestionText = document.getElementById('quiz-question-text');
-    this.quizOptionsList = document.getElementById('quiz-options-list');
-    this.quizExplanationBox = document.getElementById('quiz-explanation-box');
+    this.posttestQuizView = document.getElementById('posttest-quiz-view');
+    this.posttestTypeBadge = document.getElementById('posttest-type-badge');
+    this.posttestCounter = document.getElementById('posttest-counter');
+    this.posttestStudentTag = document.getElementById('posttest-student-tag');
+    this.posttestProgressFill = document.getElementById('posttest-progress-fill');
+    this.posttestQuestionText = document.getElementById('posttest-question-text');
+    this.posttestMcqContainer = document.getElementById('posttest-mcq-container');
+    this.posttestOptionsList = document.getElementById('posttest-options-list');
+    this.posttestMatchingContainer = document.getElementById('posttest-matching-container');
+    this.posttestMatchingHint = document.getElementById('posttest-matching-hint');
+    this.matchingItemsLeft = document.getElementById('matching-items-left');
+    this.matchingItemsRight = document.getElementById('matching-items-right');
+    this.matchingStatusText = document.getElementById('matching-status-text');
+    this.btnResetMatching = document.getElementById('btn-reset-matching');
+    this.btnVerifyMatching = document.getElementById('btn-verify-matching');
+    this.posttestExplanationBox = document.getElementById('posttest-explanation-box');
+    this.posttestFooter = document.getElementById('posttest-footer');
+    this.posttestHint = document.getElementById('posttest-hint');
     this.btnNextQuestion = document.getElementById('btn-next-question');
-    this.quizFinalScore = document.getElementById('quiz-final-score');
+
+    // Post-test Result & Leaderboard Elements (Fase 6)
+    this.quizResultScreen = document.getElementById('posttest-result-screen');
+    this.posttestSummaryName = document.getElementById('posttest-summary-name');
+    this.posttestSummaryClass = document.getElementById('posttest-summary-class');
+    this.posttestSummaryNISN = document.getElementById('posttest-summary-nisn');
+    this.posttestFinalScore = document.getElementById('posttest-final-score');
+    this.posttestScoreBreakdown = document.getElementById('posttest-score-breakdown');
+    this.posttestCompPretest = document.getElementById('posttest-comp-pretest');
+    this.posttestCompPosttest = document.getElementById('posttest-comp-posttest');
+    this.posttestCompGain = document.getElementById('posttest-comp-gain');
+    this.posttestCompNGain = document.getElementById('posttest-comp-ngain');
+    this.posttestCompNGainBadge = document.getElementById('posttest-comp-ngain-badge');
+    this.ngainCategoryPill = document.getElementById('ngain-category-pill');
+    this.ngainDescText = document.getElementById('ngain-desc-text');
+    this.ngainProgressFill = document.getElementById('ngain-progress-fill');
+    this.tabBtnSummary = document.getElementById('tab-btn-summary');
+    this.tabBtnLeaderboard = document.getElementById('tab-btn-leaderboard');
+    this.tabPaneSummary = document.getElementById('tab-pane-summary');
+    this.tabPaneLeaderboard = document.getElementById('tab-pane-leaderboard');
+    this.btnViewLeaderboardTab = document.getElementById('btn-view-leaderboard-tab');
+    this.leaderboardMyStatus = document.getElementById('leaderboard-my-status');
+    this.myRankText = document.getElementById('my-rank-text');
+    this.leaderboardAvgPill = document.getElementById('leaderboard-avg-pill');
+    this.leaderboardTopPill = document.getElementById('leaderboard-top-pill');
+    this.leaderboardTableBody = document.getElementById('leaderboard-table-body');
     this.btnRetryQuiz = document.getElementById('btn-retry-quiz');
     this.btnFinishQuiz = document.getElementById('btn-finish-quiz-goto16');
+    this.btnSlide15Leaderboard = document.getElementById('btn-slide15-leaderboard');
+    this.btnSlide16Leaderboard = document.getElementById('btn-slide16-leaderboard');
+    this.btnDrawerLeaderboard = document.getElementById('btn-drawer-leaderboard');
+
+    // Pretest Elements (Fase 3)
+    this.pretestModal = document.getElementById('pretest-modal');
+    this.pretestQuizView = document.getElementById('pretest-quiz-view');
+    this.pretestCounter = document.getElementById('pretest-counter');
+    this.pretestProgressFill = document.getElementById('pretest-progress-fill');
+    this.pretestStudentTag = document.getElementById('pretest-student-tag');
+    this.pretestQuestionText = document.getElementById('pretest-question-text');
+    this.pretestOptionsList = document.getElementById('pretest-options-list');
+    this.btnPretestNext = document.getElementById('btn-pretest-next');
+    this.pretestHint = document.getElementById('pretest-hint');
+    this.pretestResultView = document.getElementById('pretest-result-view');
+    this.pretestFinalScore = document.getElementById('pretest-final-score');
+    this.pretestScoreDetail = document.getElementById('pretest-score-detail');
+    this.btnPretestFinish = document.getElementById('btn-pretest-finish');
+    this.btnRetakePretest = document.getElementById('btn-retake-pretest');
   }
 
   bindEvents() {
-    // Splash Screen Start & Unlock Audio
+    // Inisialisasi pengecekan NISN di Splash Screen
+    this.initNISNCheck();
+
+    // Splash Screen Start & Unlock Audio (Fase 2 & Fase 3)
     if (this.btnStartSplash && this.splashOverlay) {
       this.btnStartSplash.addEventListener('click', () => {
         sound.init();
         sound.playSuccess();
         this.requestLandscapeLock();
         this.splashOverlay.classList.add('fade-out');
-        if (this.videoSlide1) {
-          this.videoSlide1.muted = sound.muted;
-          this.playSlideVideo(this.videoSlide1);
-        }
         setTimeout(() => {
           this.splashOverlay.style.display = 'none';
+          const savedPretest = dataService.getPretestScore();
+          if (savedPretest !== null && savedPretest !== undefined) {
+            // Siswa sudah memiliki skor pretest, langsung arahkan ke materi slide 1
+            this.goToSlide(1, false);
+            if (this.videoSlide1) {
+              this.videoSlide1.muted = sound.muted;
+              this.playSlideVideo(this.videoSlide1);
+            }
+            const student = dataService.getCurrentStudent();
+            if (student) {
+              this.showToast(`Selamat datang kembali, ${student.Nama}!`);
+            }
+          } else {
+            // Belum mengerjakan pretest, luncurkan modul Pretest
+            this.startPretest();
+          }
         }, 400);
+      });
+    }
+
+    // Tombol Kerjakan Ulang Pretest di Splash Screen
+    if (this.btnRetakePretest && this.splashOverlay) {
+      this.btnRetakePretest.addEventListener('click', () => {
+        sound.init();
+        sound.playClick();
+        this.requestLandscapeLock();
+        this.splashOverlay.classList.add('fade-out');
+        setTimeout(() => {
+          this.splashOverlay.style.display = 'none';
+          this.startPretest();
+        }, 400);
+      });
+    }
+
+    // Event Navigasi & Penyelesaian Pretest (Fase 3)
+    if (this.btnPretestNext) {
+      this.btnPretestNext.addEventListener('click', () => {
+        this.handlePretestNext();
+      });
+    }
+
+    if (this.btnPretestFinish) {
+      this.btnPretestFinish.addEventListener('click', () => {
+        this.closePretestAndStartLearning();
       });
     }
 
@@ -246,34 +378,96 @@ class InteractivePresentationApp {
       });
     }
 
-    // Slide 15 Quiz Launch & Controls
+    // Slide 15 Post-test Launch & Controls (Fase 5)
     if (this.btnLaunchQuiz) {
       this.btnLaunchQuiz.addEventListener('click', () => {
         sound.playPop();
-        this.startQuiz();
+        this.startPosttest();
       });
     }
 
-    this.btnCloseQuiz.addEventListener('click', () => {
-      sound.playClick();
-      this.quizModal.style.display = 'none';
-    });
+    if (this.btnCloseQuiz) {
+      this.btnCloseQuiz.addEventListener('click', () => {
+        sound.playClick();
+        this.closePosttest();
+      });
+    }
 
-    this.btnNextQuestion.addEventListener('click', () => {
-      sound.playClick();
-      this.nextQuizQuestion();
-    });
+    if (this.btnResetMatching) {
+      this.btnResetMatching.addEventListener('click', () => {
+        sound.playClick();
+        this.resetMatchingPairs();
+      });
+    }
 
-    this.btnRetryQuiz.addEventListener('click', () => {
-      sound.playPop();
-      this.startQuiz();
-    });
+    if (this.btnVerifyMatching) {
+      this.btnVerifyMatching.addEventListener('click', () => {
+        this.verifyMatchingAnswer();
+      });
+    }
 
-    this.btnFinishQuiz.addEventListener('click', () => {
-      sound.playSuccess();
-      this.quizModal.style.display = 'none';
-      this.goToSlide(16);
-    });
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.addEventListener('click', () => {
+        sound.playClick();
+        this.nextPosttestQuestion();
+      });
+    }
+
+    if (this.btnRetryQuiz) {
+      this.btnRetryQuiz.addEventListener('click', () => {
+        sound.playPop();
+        this.startPosttest();
+      });
+    }
+
+    if (this.btnFinishQuiz) {
+      this.btnFinishQuiz.addEventListener('click', () => {
+        sound.playSuccess();
+        this.closePosttest();
+        this.goToSlide(16);
+      });
+    }
+
+    // Tabs & Leaderboard Event Listeners (Fase 6)
+    if (this.tabBtnSummary) {
+      this.tabBtnSummary.addEventListener('click', () => {
+        sound.playClick();
+        this.switchPosttestTab('summary');
+      });
+    }
+
+    if (this.tabBtnLeaderboard) {
+      this.tabBtnLeaderboard.addEventListener('click', () => {
+        sound.playClick();
+        this.switchPosttestTab('leaderboard');
+      });
+    }
+
+    if (this.btnViewLeaderboardTab) {
+      this.btnViewLeaderboardTab.addEventListener('click', () => {
+        sound.playClick();
+        this.switchPosttestTab('leaderboard');
+      });
+    }
+
+    if (this.btnSlide15Leaderboard) {
+      this.btnSlide15Leaderboard.addEventListener('click', () => {
+        this.openLeaderboard('leaderboard');
+      });
+    }
+
+    if (this.btnSlide16Leaderboard) {
+      this.btnSlide16Leaderboard.addEventListener('click', () => {
+        this.openLeaderboard('leaderboard');
+      });
+    }
+
+    if (this.btnDrawerLeaderboard) {
+      this.btnDrawerLeaderboard.addEventListener('click', () => {
+        this.closeDrawer();
+        this.openLeaderboard('leaderboard');
+      });
+    }
 
     // Slide 10 Formative Game
     if (this.btnStartVerbGame) {
@@ -302,6 +496,34 @@ class InteractivePresentationApp {
         this.infoModal.style.display = 'none';
       }
     });
+
+    // Glosarium Modal Listeners
+    if (this.btnOpenGlosarium) {
+      this.btnOpenGlosarium.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openGlosarium();
+      });
+    }
+
+    if (this.btnCloseGlosarium) {
+      this.btnCloseGlosarium.addEventListener('click', () => {
+        this.closeGlosarium();
+      });
+    }
+
+    if (this.glosariumModal) {
+      this.glosariumModal.addEventListener('click', (e) => {
+        if (e.target === this.glosariumModal) {
+          this.closeGlosarium();
+        }
+      });
+    }
+
+    if (this.glosariumSearch) {
+      this.glosariumSearch.addEventListener('input', () => {
+        this.renderGlosariumList(this.glosariumSearch.value);
+      });
+    }
 
     // Top HUD Quick Menu Toggle & Popover
     if (this.btnHUDMenuToggle && this.hudActionsMenu) {
@@ -382,6 +604,7 @@ class InteractivePresentationApp {
         this.closeDrawer();
         this.infoModal.style.display = 'none';
         this.quizModal.style.display = 'none';
+        if (this.glosariumModal) this.glosariumModal.style.display = 'none';
       } else if (e.key === 'Home') {
         this.goToSlide(3);
       }
@@ -457,6 +680,22 @@ class InteractivePresentationApp {
 
     this.currentSlide = slideNumber;
 
+    // Pelacak Progres (Fase 4): Rekam slide tertinggi yang telah dikunjungi siswa
+    const prevMax = this.maxSlideVisited;
+    if (slideNumber > this.maxSlideVisited) {
+      this.maxSlideVisited = slideNumber;
+      dataService.saveMaxSlideVisited(slideNumber);
+
+      // Notifikasi pembukaan kunci saat pertama kali tiba di Slide 14
+      if (slideNumber === 14 && prevMax < 14) {
+        sound.playSuccess();
+        this.showToast('🎉 Materi selesai dipelajari! Kuis Interaktif (Slide 15) kini telah terbuka.');
+      }
+    }
+
+    // Perbarui visualisasi status kunci di menu Slide 3 dan Drawer
+    this.updateLockUI();
+
     // Update active slide frame
     this.slideFrames.forEach(frame => {
       const num = parseInt(frame.getAttribute('data-slide'), 10);
@@ -483,11 +722,15 @@ class InteractivePresentationApp {
       }
     });
 
-    // Handle background videos (Slide 1 & Slide 2)
+    // Handle background videos (Slide 1 & Slide 2 jika elemen ada)
     if (slideNumber === 1) {
       this.stopSlideVideo(this.videoSlide2);
-      if (!this.splashOverlay || this.splashOverlay.classList.contains('fade-out')) {
+      const isSplashVisible = this.splashOverlay && this.splashOverlay.style.display !== 'none' && !this.splashOverlay.classList.contains('fade-out');
+      const isPretestOpen = this.pretestModal && this.pretestModal.style.display !== 'none';
+      if (!isSplashVisible && !isPretestOpen) {
         this.playSlideVideo(this.videoSlide1);
+      } else {
+        this.stopSlideVideo(this.videoSlide1);
       }
     } else if (slideNumber === 2) {
       this.stopSlideVideo(this.videoSlide1);
@@ -515,24 +758,6 @@ class InteractivePresentationApp {
       }
     }
 
-    // Manage Slide 14 Sketchfab video/3D interactive lifecycle
-    const sketchfabFrame = document.getElementById('sketchfab-frame');
-    if (sketchfabFrame) {
-      const targetSketchfabSrc = sketchfabFrame.dataset.src || 'https://sketchfab.com/models/aafcbe2ce9744bde81ab74bdfcf249b5/embed?autostart=1';
-      if (!sketchfabFrame.dataset.src) {
-        sketchfabFrame.dataset.src = targetSketchfabSrc;
-      }
-      if (slideNumber === 14) {
-        if (!sketchfabFrame.src || sketchfabFrame.src.includes('about:blank')) {
-          sketchfabFrame.src = targetSketchfabSrc;
-        }
-      } else {
-        if (sketchfabFrame.src && !sketchfabFrame.src.includes('about:blank')) {
-          sketchfabFrame.src = 'about:blank';
-        }
-      }
-    }
-
     // Stop any HTML5 video or audio on inactive slides
     document.querySelectorAll('.slide-frame:not(.active) video, .slide-frame:not(.active) audio').forEach(media => {
       if (media !== this.videoSlide1 && media !== this.videoSlide2) {
@@ -545,27 +770,87 @@ class InteractivePresentationApp {
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
     }
+  }
 
+  updateLockUI() {
+    const isUnlocked = dataService.isPosttestUnlocked();
 
+    // Hotspot Kuis di Slide 3
+    if (this.hotspotMenuQuiz) {
+      if (isUnlocked) {
+        this.hotspotMenuQuiz.classList.remove('is-locked');
+        this.hotspotMenuQuiz.classList.add('is-unlocked');
+        this.hotspotMenuQuiz.title = '6. Kuis Interaktif (Terbuka)';
+      } else {
+        this.hotspotMenuQuiz.classList.add('is-locked');
+        this.hotspotMenuQuiz.classList.remove('is-unlocked');
+        this.hotspotMenuQuiz.title = '6. Kuis Interaktif (Terkunci - Selesaikan Slide 1-14)';
+      }
+    }
+
+    if (this.hotspotQuizLockBadge) {
+      this.hotspotQuizLockBadge.style.display = isUnlocked ? 'none' : 'inline-flex';
+    }
+
+    // Refresh teks progres di drawer
+    if (this.drawerProgressText) {
+      const displayCompleted = Math.min(this.maxSlideVisited, 14);
+      this.drawerProgressText.textContent = `Progres: ${displayCompleted} / 14 Slide`;
+    }
   }
 
   renderDrawerList() {
+    if (!this.drawerSlidesContainer) return;
     this.drawerSlidesContainer.innerHTML = '';
+
+    const unlocked = dataService.isPosttestUnlocked();
+
+    if (this.drawerProgressText) {
+      const displayCompleted = Math.min(this.maxSlideVisited, 14);
+      this.drawerProgressText.textContent = `Progres: ${displayCompleted} / 14 Slide`;
+    }
+
     SLIDE_DIRECTORY.forEach((slide) => {
       const div = document.createElement('div');
-      div.className = `drawer-slide-item ${slide.id === this.currentSlide ? 'active' : ''}`;
+      const isCurrent = slide.id === this.currentSlide;
+      const isLocked = (slide.id === 15 || slide.id === 16) && !unlocked;
+
+      let badgeHtml = '';
+      if (slide.id === 15) {
+        badgeHtml = isLocked
+          ? '<span class="drawer-status-badge locked">🔒 Terkunci</span>'
+          : '<span class="drawer-status-badge unlocked">🔓 Terbuka</span>';
+      } else if (slide.id === 16) {
+        badgeHtml = isLocked
+          ? '<span class="drawer-status-badge locked">🔒 Terkunci</span>'
+          : '<span class="drawer-status-badge unlocked">Selesai</span>';
+      } else if (slide.id <= this.maxSlideVisited) {
+        badgeHtml = '<span class="drawer-status-badge completed">✓ Dibaca</span>';
+      }
+
+      div.className = `drawer-slide-item ${isCurrent ? 'active' : ''} ${isLocked ? 'is-locked' : ''}`;
       div.innerHTML = `
         <img class="drawer-item-thumb" src="assets/slides/slide_${slide.id}.webp" alt="Slide ${slide.id}" loading="lazy" decoding="async">
         <div class="drawer-item-info">
-          <div class="drawer-item-num">Slide ${slide.id}</div>
+          <div class="drawer-item-header">
+            <div class="drawer-item-num">Slide ${slide.id}</div>
+            ${badgeHtml}
+          </div>
           <div class="drawer-item-name">${slide.title}</div>
         </div>
       `;
+
       div.addEventListener('click', () => {
+        if (isLocked) {
+          sound.playError();
+          this.showToast('🔒 Selesaikan materi hingga Slide 14 untuk membuka Kuis Evaluasi.');
+          return;
+        }
         sound.playClick();
         this.goToSlide(slide.id);
         this.closeDrawer();
       });
+
       this.drawerSlidesContainer.appendChild(div);
     });
   }
@@ -586,6 +871,52 @@ class InteractivePresentationApp {
     this.infoModal.style.display = 'flex';
   }
 
+  openGlosarium() {
+    if (!this.glosariumModal) return;
+    sound.playPop();
+    this.renderGlosariumList('');
+    if (this.glosariumSearch) this.glosariumSearch.value = '';
+    this.glosariumModal.style.display = 'flex';
+  }
+
+  closeGlosarium() {
+    if (!this.glosariumModal) return;
+    sound.playClick();
+    this.glosariumModal.style.display = 'none';
+  }
+
+  renderGlosariumList(searchTerm = '') {
+    if (!this.glosariumGrid) return;
+    this.glosariumGrid.innerHTML = '';
+
+    const clean = searchTerm.trim().toLowerCase();
+    const filtered = clean
+      ? GLOSARIUM_DATA.filter(item =>
+          item.term.toLowerCase().includes(clean) ||
+          item.def.toLowerCase().includes(clean) ||
+          item.category.toLowerCase().includes(clean)
+        )
+      : GLOSARIUM_DATA;
+
+    if (filtered.length === 0) {
+      this.glosariumGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 24px;">Tidak ditemukan istilah yang sesuai.</div>';
+      return;
+    }
+
+    filtered.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'glosarium-card';
+      card.innerHTML = `
+        <div class="glosarium-card-term">
+          <span>${item.term}</span>
+          <span class="glosarium-card-category">${item.category}</span>
+        </div>
+        <div class="glosarium-card-def">${item.def}</div>
+      `;
+      this.glosariumGrid.appendChild(card);
+    });
+  }
+
   showToast(message) {
     this.toast.textContent = message;
     this.toast.classList.add('show');
@@ -593,6 +924,122 @@ class InteractivePresentationApp {
     this.toastTimeout = setTimeout(() => {
       this.toast.classList.remove('show');
     }, 2500);
+  }
+
+  // --- Validasi NIS/NISN & Identitas Siswa (Auto-Cek) ---
+  initNISNCheck() {
+    if (!this.inputNISN || !this.btnCheckNISN) return;
+
+    // Default kosong sesuai instruksi
+    this.inputNISN.value = '';
+    this.inputNISN.placeholder = '';
+
+    this.btnCheckNISN.addEventListener('click', () => {
+      sound.playClick();
+      this.handleCheckNISN();
+    });
+
+    this.inputNISN.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sound.playClick();
+        this.handleCheckNISN();
+      }
+    });
+
+    // Reset tombol jika pengguna mengubah isi input
+    this.inputNISN.addEventListener('input', () => {
+      const val = this.inputNISN.value.trim();
+
+      if (this.btnStartSplash && this.btnStartSplash.style.display !== 'none') {
+        const currentSaved = dataService.getCurrentStudent();
+        const matchesCurrent = currentSaved && (val === currentSaved.NISN || (currentSaved.NIS && val === currentSaved.NIS));
+        if (!matchesCurrent) {
+          this.btnStartSplash.style.display = 'none';
+          if (this.btnRetakePretest) this.btnRetakePretest.style.display = 'none';
+          if (this.studentCard) this.studentCard.style.display = 'none';
+          this.showNISNFeedback('Nomor identitas diubah. Silakan klik "Periksa" kembali.', '');
+        }
+      }
+    });
+  }
+
+  async handleCheckNISN() {
+    const rawVal = this.inputNISN ? this.inputNISN.value.trim() : '';
+
+    if (!rawVal) {
+      sound.playError();
+      this.showNISNFeedback('Harap masukkan nomor NIS atau NISN Anda terlebih dahulu.', 'error');
+      return;
+    }
+
+    this.btnCheckNISN.disabled = true;
+    this.btnCheckNISN.textContent = 'Memeriksa...';
+    this.showNISNFeedback('Memeriksa ketersediaan data siswa...', '');
+
+    try {
+      const result = await dataService.validateNISN(rawVal);
+      if (result.success && result.student) {
+        sound.playSuccess();
+        this.renderVerifiedStudent(result.student);
+        const hasScore = dataService.getPretestScore() !== null;
+        const msg = hasScore
+          ? 'Data siswa terverifikasi. Anda dapat melanjutkan materi atau mengulang Pretest.'
+          : 'Data siswa berhasil diverifikasi. Silakan klik "Mulai Pretest".';
+        this.showNISNFeedback(msg, 'success');
+      } else {
+        sound.playError();
+        this.showNISNFeedback(`NIS/NISN "${rawVal}" tidak terdaftar di basis data.`, 'error');
+        if (this.studentCard) this.studentCard.style.display = 'none';
+        if (this.btnStartSplash) this.btnStartSplash.style.display = 'none';
+        if (this.btnRetakePretest) this.btnRetakePretest.style.display = 'none';
+      }
+    } catch (err) {
+      sound.playError();
+      this.showNISNFeedback('Gagal menghubungi sumber data. Coba beberapa saat lagi.', 'error');
+      console.error('[App] Kesalahan validasi identitas siswa:', err);
+    } finally {
+      this.btnCheckNISN.disabled = false;
+      this.btnCheckNISN.textContent = 'Periksa';
+    }
+  }
+
+  renderVerifiedStudent(student) {
+    if (this.studentName) this.studentName.textContent = student.Nama;
+    if (this.studentNIS) this.studentNIS.textContent = student.NIS || '-';
+    if (this.studentNISN) this.studentNISN.textContent = student.NISN || '-';
+    if (this.studentClass) this.studentClass.textContent = student.Kelas || '-';
+    if (this.studentCard) this.studentCard.style.display = 'block';
+
+    const savedPretest = dataService.getPretestScore();
+    if (savedPretest !== null && savedPretest !== undefined) {
+      if (this.btnStartSplash) {
+        this.btnStartSplash.textContent = `Lanjut Belajar (Pretest: ${savedPretest}) ➔`;
+        this.btnStartSplash.style.display = 'inline-flex';
+      }
+      if (this.btnRetakePretest) {
+        this.btnRetakePretest.style.display = 'inline-block';
+      }
+    } else {
+      if (this.btnStartSplash) {
+        this.btnStartSplash.textContent = 'Mulai Pretest ➔';
+        this.btnStartSplash.style.display = 'inline-flex';
+      }
+      if (this.btnRetakePretest) {
+        this.btnRetakePretest.style.display = 'none';
+      }
+    }
+
+    // Sinkronisasi status penguncian dan drawer untuk siswa yang login
+    this.maxSlideVisited = dataService.getMaxSlideVisited();
+    this.updateLockUI();
+    this.renderDrawerList();
+  }
+
+  showNISNFeedback(message, type = '') {
+    if (!this.feedbackNISN) return;
+    this.feedbackNISN.textContent = message;
+    this.feedbackNISN.className = `splash-feedback ${type}`.trim();
   }
 
   // --- HUD Menu & Utility UI Helpers ---
@@ -844,85 +1291,1066 @@ class InteractivePresentationApp {
     }, 1400);
   }
 
-  // --- Slide 15: Quiz Time Implementation ---
-  startQuiz() {
-    this.quizIndex = 0;
-    this.quizScore = 0;
-    this.quizModal.style.display = 'flex';
-    this.quizBody.style.display = 'flex';
-    this.quizFooter.style.display = 'flex';
-    this.quizResultScreen.style.display = 'none';
-    this.renderQuizQuestion();
+  // =========================================================================
+  // FASE 3: MODUL & ENGINE PRETEST
+  // =========================================================================
+
+  async startPretest() {
+    try {
+      this.pretestQuestions = await dataService.getPretestQuestions();
+    } catch (err) {
+      console.warn('[Pretest] Gagal memuat soal pretest:', err);
+      this.pretestQuestions = [];
+    }
+
+    if (!this.pretestQuestions || this.pretestQuestions.length === 0) {
+      this.showToast('Gagal memuat soal pretest. Mengarahkan ke materi...');
+      this.closePretestAndStartLearning();
+      return;
+    }
+
+    this.pretestIndex = 0;
+    this.pretestAnswers = {};
+    this.pretestScore = null;
+
+    const student = dataService.getCurrentStudent();
+    if (this.pretestStudentTag) {
+      this.pretestStudentTag.textContent = student ? `${student.Nama} (${student.Kelas || 'Siswa'})` : 'Siswa';
+    }
+
+    if (this.pretestQuizView) this.pretestQuizView.style.display = 'flex';
+    if (this.pretestResultView) this.pretestResultView.style.display = 'none';
+
+    if (this.pretestModal) {
+      this.pretestModal.style.display = 'flex';
+      // Force reflow for CSS animation
+      void this.pretestModal.offsetWidth;
+      this.pretestModal.classList.add('active');
+    }
+
+    this.renderPretestQuestion();
   }
 
-  renderQuizQuestion() {
-    this.quizAnswered = false;
-    this.btnNextQuestion.style.visibility = 'hidden';
-    this.quizExplanationBox.style.display = 'none';
+  renderPretestQuestion() {
+    const total = this.pretestQuestions.length;
+    if (this.pretestIndex < 0 || this.pretestIndex >= total) return;
 
-    const q = QUIZ_VOLCANO[this.quizIndex];
-    this.quizQuestionNumber.textContent = `Soal ${this.quizIndex + 1} / ${QUIZ_VOLCANO.length}`;
-    this.quizLiveScore.textContent = `${this.quizScore * 10} Poin`;
-    this.quizQuestionText.textContent = q.question;
+    const q = this.pretestQuestions[this.pretestIndex];
 
-    this.quizOptionsList.innerHTML = '';
-    q.options.forEach((opt, idx) => {
+    if (this.pretestCounter) {
+      this.pretestCounter.textContent = `Soal ${this.pretestIndex + 1} dari ${total}`;
+    }
+
+    if (this.pretestProgressFill) {
+      const pct = Math.round(((this.pretestIndex + 1) / total) * 100);
+      this.pretestProgressFill.style.width = `${pct}%`;
+    }
+
+    if (this.pretestQuestionText) {
+      this.pretestQuestionText.textContent = q.Pertanyaan || '';
+    }
+
+    const currentAnswer = this.pretestAnswers[this.pretestIndex];
+    if (this.pretestHint) {
+      if (currentAnswer) {
+        this.pretestHint.textContent = `Jawaban Anda: Opsi ${currentAnswer}`;
+      } else {
+        this.pretestHint.textContent = 'Pilih salah satu jawaban untuk melanjutkan.';
+      }
+    }
+
+    if (this.btnPretestNext) {
+      this.btnPretestNext.disabled = !currentAnswer;
+      if (this.pretestIndex === total - 1) {
+        this.btnPretestNext.textContent = 'Kirim Jawaban ➔';
+      } else {
+        this.btnPretestNext.textContent = 'Soal Selanjutnya ➔';
+      }
+    }
+
+    if (this.pretestOptionsList) {
+      this.pretestOptionsList.innerHTML = '';
+      const options = [
+        { letter: 'A', text: q.Opsi_A },
+        { letter: 'B', text: q.Opsi_B },
+        { letter: 'C', text: q.Opsi_C },
+        { letter: 'D', text: q.Opsi_D }
+      ];
+      if (q.Opsi_E) {
+        options.push({ letter: 'E', text: q.Opsi_E });
+      }
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pretest-opt-btn';
+        if (currentAnswer === opt.letter) {
+          btn.classList.add('selected');
+        }
+
+        const letterSpan = document.createElement('span');
+        letterSpan.className = 'pretest-opt-letter';
+        letterSpan.textContent = opt.letter;
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'pretest-opt-text';
+        textSpan.textContent = opt.text || '';
+
+        btn.appendChild(letterSpan);
+        btn.appendChild(textSpan);
+
+        btn.addEventListener('click', () => {
+          this.handlePretestOptionSelect(opt.letter, btn);
+        });
+
+        this.pretestOptionsList.appendChild(btn);
+      });
+    }
+  }
+
+  handlePretestOptionSelect(letter, clickedBtn) {
+    sound.playClick();
+    this.pretestAnswers[this.pretestIndex] = letter;
+
+    if (this.pretestOptionsList) {
+      const allBtns = this.pretestOptionsList.querySelectorAll('.pretest-opt-btn');
+      allBtns.forEach(b => b.classList.remove('selected'));
+    }
+    clickedBtn.classList.add('selected');
+
+    if (this.pretestHint) {
+      this.pretestHint.textContent = `Jawaban Anda: Opsi ${letter}`;
+    }
+
+    if (this.btnPretestNext) {
+      this.btnPretestNext.disabled = false;
+    }
+  }
+
+  handlePretestNext() {
+    if (!this.pretestAnswers[this.pretestIndex]) return;
+
+    sound.playClick();
+    const total = this.pretestQuestions.length;
+
+    if (this.pretestIndex < total - 1) {
+      this.pretestIndex++;
+      this.renderPretestQuestion();
+    } else {
+      this.finishPretest();
+    }
+  }
+
+  finishPretest() {
+    let correctCount = 0;
+    const total = this.pretestQuestions.length || 5;
+
+    this.pretestQuestions.forEach((q, idx) => {
+      const answered = this.pretestAnswers[idx];
+      const correctKey = String(q.Kunci || '').trim().toUpperCase();
+      if (answered && answered.toUpperCase() === correctKey) {
+        correctCount++;
+      }
+    });
+
+    const finalScore = Math.round((correctCount / total) * 100);
+    this.pretestScore = finalScore;
+    dataService.savePretestScore(finalScore);
+
+    sound.playSuccess();
+
+    if (this.pretestQuizView) this.pretestQuizView.style.display = 'none';
+    if (this.pretestResultView) this.pretestResultView.style.display = 'flex';
+
+    if (this.pretestFinalScore) {
+      this.pretestFinalScore.textContent = `${finalScore} / 100`;
+    }
+
+    if (this.pretestScoreDetail) {
+      this.pretestScoreDetail.textContent = `Jawaban benar: ${correctCount} dari ${total} soal`;
+    }
+
+    this.showToast(`Pretest selesai! Skor Anda: ${finalScore}`);
+  }
+
+  closePretestAndStartLearning() {
+    sound.playPop();
+
+    if (this.pretestModal) {
+      this.pretestModal.classList.add('fade-out');
+      setTimeout(() => {
+        this.pretestModal.style.display = 'none';
+        this.pretestModal.classList.remove('fade-out', 'active');
+      }, 300);
+    }
+
+    // Arahkan ke Slide 1 dan aktifkan media
+    this.goToSlide(1, false);
+    if (this.videoSlide1) {
+      this.videoSlide1.muted = sound.muted;
+      this.playSlideVideo(this.videoSlide1);
+    }
+
+    const student = dataService.getCurrentStudent();
+    if (student) {
+      this.showToast(`Selamat belajar, ${student.Nama}!`);
+    }
+  }
+
+  // =========================================================================
+  // FASE 5: MODUL & ENGINE POST-TEST DINAMIS (15 SOAL: MCQ & MATCHING)
+  // =========================================================================
+
+  async startPosttest() {
+    try {
+      this.posttestQuestions = await dataService.getPosttestQuestions();
+    } catch (err) {
+      console.warn('[Posttest] Gagal memuat soal evaluasi:', err);
+      this.posttestQuestions = [];
+    }
+
+    if (!this.posttestQuestions || this.posttestQuestions.length === 0) {
+      this.showToast('Gagal memuat bank soal evaluasi. Coba beberapa saat lagi.');
+      return;
+    }
+
+    this.posttestIndex = 0;
+    this.posttestAnswers = {};
+    this.posttestScore = null;
+    this.posttestActiveLeftId = null;
+    this.posttestTempPairs = {};
+    this.posttestAnswered = false;
+    this.currentMatchingData = null;
+
+    const student = dataService.getCurrentStudent();
+    if (this.posttestStudentTag) {
+      this.posttestStudentTag.textContent = student ? `${student.Nama} (${student.Kelas || 'Siswa'})` : 'Siswa';
+    }
+
+    if (this.posttestQuizView) this.posttestQuizView.style.display = 'flex';
+    if (this.quizResultScreen) this.quizResultScreen.style.display = 'none';
+
+    if (this.quizModal) {
+      this.quizModal.style.display = 'flex';
+      void this.quizModal.offsetWidth;
+      this.quizModal.classList.add('active');
+    }
+
+    this.renderPosttestQuestion();
+  }
+
+  renderPosttestQuestion() {
+    const total = this.posttestQuestions.length || 15;
+    if (this.posttestIndex < 0 || this.posttestIndex >= total) return;
+
+    const q = this.posttestQuestions[this.posttestIndex];
+    this.posttestAnswered = false;
+    this.posttestActiveLeftId = null;
+    this.posttestTempPairs = {};
+
+    // Header Meta
+    if (this.posttestCounter) {
+      this.posttestCounter.textContent = `Soal ${this.posttestIndex + 1} dari ${total}`;
+    }
+
+    if (this.posttestProgressFill) {
+      const pct = Math.round(((this.posttestIndex + 1) / total) * 100);
+      this.posttestProgressFill.style.width = `${pct}%`;
+    }
+
+    const isMatching = (q.Tipe || '').toLowerCase() === 'matching';
+    if (this.posttestTypeBadge) {
+      this.posttestTypeBadge.textContent = isMatching ? 'Mencocokkan Pasangan' : 'Pilihan Ganda';
+    }
+
+    if (this.posttestQuestionText) {
+      this.posttestQuestionText.textContent = q.Pertanyaan || '';
+    }
+
+    // Reset Box Penjelasan & Tombol Lanjut
+    if (this.posttestExplanationBox) {
+      this.posttestExplanationBox.style.display = 'none';
+      this.posttestExplanationBox.innerHTML = '';
+    }
+
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.disabled = true;
+      if (this.posttestIndex === total - 1) {
+        this.btnNextQuestion.textContent = 'Lihat Hasil Evaluasi ➔';
+      } else {
+        this.btnNextQuestion.textContent = 'Soal Selanjutnya ➔';
+      }
+    }
+
+    if (isMatching) {
+      // Tampilkan kontainer Matching
+      if (this.posttestMcqContainer) this.posttestMcqContainer.style.display = 'none';
+      if (this.posttestMatchingContainer) this.posttestMatchingContainer.style.display = 'flex';
+      if (this.posttestHint) {
+        this.posttestHint.textContent = 'Hubungkan 4 pasangan kartu, lalu klik "Periksa Pasangan".';
+      }
+      this.setupMatchingQuestion(q);
+    } else {
+      // Tampilkan kontainer MCQ
+      if (this.posttestMatchingContainer) this.posttestMatchingContainer.style.display = 'none';
+      if (this.posttestMcqContainer) this.posttestMcqContainer.style.display = 'flex';
+      if (this.posttestHint) {
+        this.posttestHint.textContent = 'Pilih salah satu jawaban yang benar untuk melanjutkan.';
+      }
+      this.setupMCQQuestion(q);
+    }
+  }
+
+  // --- Penangan Soal Pilihan Ganda (MCQ) ---
+  setupMCQQuestion(q) {
+    if (!this.posttestOptionsList) return;
+    this.posttestOptionsList.innerHTML = '';
+
+    const options = [
+      { letter: 'A', text: q.Opsi_A },
+      { letter: 'B', text: q.Opsi_B },
+      { letter: 'C', text: q.Opsi_C },
+      { letter: 'D', text: q.Opsi_D }
+    ];
+
+    options.forEach(opt => {
       const btn = document.createElement('button');
-      btn.className = 'quiz-opt-btn';
-      btn.innerHTML = `<span style="font-weight:700; color:#ea580c;">${String.fromCharCode(65 + idx)}.</span> ${opt}`;
-      btn.addEventListener('click', () => this.handleQuizSelection(btn, idx, q));
-      this.quizOptionsList.appendChild(btn);
+      btn.type = 'button';
+      btn.className = 'posttest-opt-btn';
+
+      const letterSpan = document.createElement('span');
+      letterSpan.className = 'posttest-opt-letter';
+      letterSpan.textContent = opt.letter;
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'posttest-opt-text';
+      textSpan.textContent = opt.text || '';
+
+      btn.appendChild(letterSpan);
+      btn.appendChild(textSpan);
+
+      btn.addEventListener('click', () => {
+        this.handlePosttestMCQSelection(btn, opt.letter, q);
+      });
+
+      this.posttestOptionsList.appendChild(btn);
     });
   }
 
-  handleQuizSelection(clickedBtn, selectedIdx, questionData) {
-    if (this.quizAnswered) return;
-    this.quizAnswered = true;
+  handlePosttestMCQSelection(clickedBtn, letter, q) {
+    if (this.posttestAnswered) return;
+    this.posttestAnswered = true;
 
-    const allButtons = this.quizOptionsList.querySelectorAll('.quiz-opt-btn');
+    const allButtons = this.posttestOptionsList.querySelectorAll('.posttest-opt-btn');
     allButtons.forEach(b => b.disabled = true);
 
-    if (selectedIdx === questionData.answer) {
+    const correctKey = String(q.Kunci || '').trim().toUpperCase();
+    const isCorrect = letter.toUpperCase() === correctKey;
+
+    if (isCorrect) {
       sound.playSuccess();
       clickedBtn.classList.add('selected-correct');
-      this.quizScore++;
-      this.quizLiveScore.textContent = `${this.quizScore * 10} Poin`;
+      this.posttestAnswers[this.posttestIndex] = {
+        type: 'mcq',
+        selected: letter,
+        isCorrect: true,
+        earnedPoints: 1.0
+      };
+      if (this.posttestHint) {
+        this.posttestHint.textContent = 'Jawaban tepat!';
+      }
     } else {
       sound.playError();
       clickedBtn.classList.add('selected-wrong');
-      allButtons[questionData.answer].classList.add('selected-correct');
+      allButtons.forEach(b => {
+        const l = b.querySelector('.posttest-opt-letter')?.textContent?.trim()?.toUpperCase();
+        if (l === correctKey) {
+          b.classList.add('selected-correct');
+        }
+      });
+      this.posttestAnswers[this.posttestIndex] = {
+        type: 'mcq',
+        selected: letter,
+        isCorrect: false,
+        earnedPoints: 0.0
+      };
+      if (this.posttestHint) {
+        this.posttestHint.textContent = `Jawaban kurang tepat. Jawaban benar: Opsi ${correctKey}.`;
+      }
     }
 
-    // Show Explanation
-    this.quizExplanationBox.textContent = `💡 Penjelasan: ${questionData.explanation}`;
-    this.quizExplanationBox.style.display = 'block';
+    // Tampilkan pembahasan edukatif
+    if (this.posttestExplanationBox && q.Pembahasan) {
+      this.posttestExplanationBox.innerHTML = `<strong>Pembahasan:</strong> ${q.Pembahasan}`;
+      this.posttestExplanationBox.style.display = 'block';
+    }
 
-    // Show Next Button
-    this.btnNextQuestion.style.visibility = 'visible';
-    if (this.quizIndex === QUIZ_VOLCANO.length - 1) {
-      this.btnNextQuestion.textContent = 'Lihat Hasil Akhir 🏆';
-    } else {
-      this.btnNextQuestion.textContent = 'Soal Selanjutnya ➔';
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.disabled = false;
     }
   }
 
-  nextQuizQuestion() {
-    if (this.quizIndex < QUIZ_VOLCANO.length - 1) {
-      this.quizIndex++;
-      this.renderQuizQuestion();
-    } else {
-      this.showQuizResults();
+  // --- Penangan Soal Mencocokkan (Tap-to-Pair) ---
+  setupMatchingQuestion(q) {
+    const rawLeft = (q.Pasangan_Kiri || '').split('|').map(s => s.trim()).filter(Boolean);
+    const rawRight = (q.Pasangan_Kanan || '').split('|').map(s => s.trim()).filter(Boolean);
+
+    const leftItems = rawLeft.map((text, idx) => ({ id: idx, text }));
+    const rightItems = rawRight.map((text, idx) => ({ originalId: idx, text }));
+
+    // Acak posisi item kanan (Fisher-Yates shuffle)
+    const shuffledRight = [...rightItems];
+    for (let i = shuffledRight.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledRight[i], shuffledRight[j]] = [shuffledRight[j], shuffledRight[i]];
+    }
+
+    this.currentMatchingData = { leftItems, shuffledRight, q };
+    this.posttestTempPairs = {};
+    this.posttestActiveLeftId = null;
+
+    if (this.posttestMatchingHint) {
+      this.posttestMatchingHint.textContent = 'Ketuk satu kartu di kolom kiri, lalu ketuk pasangannya di kolom kanan.';
+    }
+
+    this.renderMatchingCards();
+  }
+
+  renderMatchingCards() {
+    if (!this.currentMatchingData) return;
+    const { leftItems, shuffledRight } = this.currentMatchingData;
+
+    // Tentukan nomor pasangan untuk visualisasi (1-4)
+    const pairColors = ['paired-1', 'paired-2', 'paired-3', 'paired-4'];
+    const assignedPairs = {};
+    let pairCounter = 1;
+    leftItems.forEach(item => {
+      if (this.posttestTempPairs[item.id] !== undefined) {
+        assignedPairs[item.id] = {
+          num: pairCounter,
+          colorClass: pairColors[(pairCounter - 1) % pairColors.length]
+        };
+        pairCounter++;
+      }
+    });
+
+    // Render Kolom Kiri
+    if (this.matchingItemsLeft) {
+      this.matchingItemsLeft.innerHTML = '';
+      leftItems.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'matching-item';
+        card.setAttribute('data-left-id', String(item.id));
+
+        const pairInfo = assignedPairs[item.id];
+        if (pairInfo) {
+          card.classList.add(pairInfo.colorClass);
+        }
+
+        if (this.posttestActiveLeftId === item.id) {
+          card.classList.add('is-selected');
+        }
+
+        if (this.posttestAnswered) {
+          card.classList.add('locked');
+          const isCorrect = this.posttestTempPairs[item.id] === item.id;
+          card.classList.add(isCorrect ? 'match-correct' : 'match-wrong');
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'matching-item-badge';
+        badge.textContent = String(idx + 1);
+
+        const content = document.createElement('div');
+        content.className = 'matching-item-content';
+        content.textContent = item.text;
+
+        card.appendChild(badge);
+        card.appendChild(content);
+
+        if (pairInfo) {
+          const statusTag = document.createElement('span');
+          statusTag.className = 'matching-pair-badge';
+          if (this.posttestAnswered) {
+            const isCorrect = this.posttestTempPairs[item.id] === item.id;
+            statusTag.textContent = isCorrect ? '✓ Benar' : '✕ Salah';
+          } else {
+            statusTag.textContent = `Pasangan ${pairInfo.num}`;
+          }
+          card.appendChild(statusTag);
+        }
+
+        card.addEventListener('click', () => {
+          this.handleMatchingLeftClick(item.id);
+        });
+
+        this.matchingItemsLeft.appendChild(card);
+      });
+    }
+
+    // Render Kolom Kanan
+    if (this.matchingItemsRight) {
+      this.matchingItemsRight.innerHTML = '';
+      shuffledRight.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'matching-item';
+        card.setAttribute('data-right-id', String(item.originalId));
+
+        // Cari apakah right item ini terpasang ke left item manapun
+        let pairedLeftId = null;
+        for (const [lId, rId] of Object.entries(this.posttestTempPairs)) {
+          if (Number(rId) === item.originalId) {
+            pairedLeftId = Number(lId);
+            break;
+          }
+        }
+
+        const pairInfo = pairedLeftId !== null ? assignedPairs[pairedLeftId] : null;
+        if (pairInfo) {
+          card.classList.add(pairInfo.colorClass);
+        }
+
+        if (this.posttestAnswered) {
+          card.classList.add('locked');
+          if (pairedLeftId !== null) {
+            const isCorrect = pairedLeftId === item.originalId;
+            card.classList.add(isCorrect ? 'match-correct' : 'match-wrong');
+          }
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'matching-item-badge';
+        badge.textContent = String.fromCharCode(65 + idx);
+
+        const content = document.createElement('div');
+        content.className = 'matching-item-content';
+        content.textContent = item.text;
+
+        card.appendChild(badge);
+        card.appendChild(content);
+
+        if (pairInfo) {
+          const statusTag = document.createElement('span');
+          statusTag.className = 'matching-pair-badge';
+          if (this.posttestAnswered) {
+            const isCorrect = pairedLeftId === item.originalId;
+            statusTag.textContent = isCorrect ? '✓ Benar' : '✕ Salah';
+          } else {
+            statusTag.textContent = `Pasangan ${pairInfo.num}`;
+          }
+          card.appendChild(statusTag);
+        }
+
+        card.addEventListener('click', () => {
+          this.handleMatchingRightClick(item.originalId);
+        });
+
+        this.matchingItemsRight.appendChild(card);
+      });
+    }
+
+    // Update Action Status
+    const count = Object.keys(this.posttestTempPairs).length;
+    const totalPairs = leftItems.length;
+
+    if (this.matchingStatusText) {
+      this.matchingStatusText.textContent = `Terpasang: ${count} / ${totalPairs} Pasangan`;
+    }
+
+    if (this.btnVerifyMatching) {
+      this.btnVerifyMatching.disabled = count < totalPairs || this.posttestAnswered;
+    }
+
+    if (this.btnResetMatching) {
+      this.btnResetMatching.disabled = count === 0 || this.posttestAnswered;
     }
   }
 
-  showQuizResults() {
+  handleMatchingLeftClick(leftId) {
+    if (this.posttestAnswered) return;
+
+    if (this.posttestTempPairs[leftId] !== undefined) {
+      // Hapus pasangan yang sudah ada jika diklik kembali
+      delete this.posttestTempPairs[leftId];
+      this.posttestActiveLeftId = null;
+      sound.playClick();
+      if (this.posttestMatchingHint) {
+        this.posttestMatchingHint.textContent = 'Pasangan dibatalkan. Pilih kartu kiri untuk memasangkan kembali.';
+      }
+    } else {
+      if (this.posttestActiveLeftId === leftId) {
+        this.posttestActiveLeftId = null;
+        sound.playPop();
+      } else {
+        this.posttestActiveLeftId = leftId;
+        sound.playPop();
+        if (this.posttestMatchingHint) {
+          this.posttestMatchingHint.textContent = 'Kartu kiri dipilih. Sekarang ketuk pasangannya di kolom kanan.';
+        }
+      }
+    }
+    this.renderMatchingCards();
+  }
+
+  handleMatchingRightClick(rightOrigId) {
+    if (this.posttestAnswered) return;
+
+    if (this.posttestActiveLeftId === null) {
+      // Tidak ada kartu kiri yang aktif dipilih
+      // Cek apakah kartu kanan ini sudah terpasang
+      let pairedLeft = null;
+      for (const [lId, rId] of Object.entries(this.posttestTempPairs)) {
+        if (Number(rId) === rightOrigId) {
+          pairedLeft = lId;
+          break;
+        }
+      }
+      if (pairedLeft !== null) {
+        delete this.posttestTempPairs[pairedLeft];
+        sound.playClick();
+        if (this.posttestMatchingHint) {
+          this.posttestMatchingHint.textContent = 'Pasangan dibatalkan. Ketuk kartu di kolom kiri terlebih dahulu.';
+        }
+        this.renderMatchingCards();
+      } else {
+        sound.playPop();
+        if (this.posttestMatchingHint) {
+          this.posttestMatchingHint.textContent = 'Pilih satu kartu di kolom kiri terlebih dahulu sebelum memilih pasangan kanan.';
+        }
+      }
+      return;
+    }
+
+    // Jika kartu kanan ini sebelumnya telah terpasang ke left item lain, hapus pasangan sebelumnya
+    for (const [lId, rId] of Object.entries(this.posttestTempPairs)) {
+      if (Number(rId) === rightOrigId) {
+        delete this.posttestTempPairs[lId];
+        break;
+      }
+    }
+
+    // Pasangkan dengan left item yang aktif
+    this.posttestTempPairs[this.posttestActiveLeftId] = rightOrigId;
+    this.posttestActiveLeftId = null;
+    sound.playClick();
+
+    const count = Object.keys(this.posttestTempPairs).length;
+    const total = this.currentMatchingData.leftItems.length;
+
+    if (this.posttestMatchingHint) {
+      if (count === total) {
+        this.posttestMatchingHint.textContent = 'Seluruh pasangan telah terhubung. Klik "Periksa Pasangan" untuk verifikasi.';
+      } else {
+        this.posttestMatchingHint.textContent = `Pasangan terhubung! Lanjutkan (${count} dari ${total}).`;
+      }
+    }
+
+    this.renderMatchingCards();
+  }
+
+  resetMatchingPairs() {
+    if (this.posttestAnswered) return;
+    this.posttestTempPairs = {};
+    this.posttestActiveLeftId = null;
+    if (this.posttestMatchingHint) {
+      this.posttestMatchingHint.textContent = 'Seluruh pasangan direset. Ketuk kartu kiri lalu pasangkan dengan kartu kanan.';
+    }
+    this.renderMatchingCards();
+  }
+
+  verifyMatchingAnswer() {
+    if (this.posttestAnswered || !this.currentMatchingData) return;
+    this.posttestAnswered = true;
+
+    const { leftItems, q } = this.currentMatchingData;
+    let correctCount = 0;
+
+    leftItems.forEach(item => {
+      if (this.posttestTempPairs[item.id] === item.id) {
+        correctCount++;
+      }
+    });
+
+    const totalPairs = leftItems.length || 4;
+    const earnedPoints = correctCount / totalPairs;
+
+    this.posttestAnswers[this.posttestIndex] = {
+      type: 'matching',
+      correctCount,
+      totalPairs,
+      earnedPoints
+    };
+
+    if (correctCount === totalPairs) {
+      sound.playSuccess();
+      if (this.posttestHint) {
+        this.posttestHint.textContent = `Sempurna! Semua (${correctCount}/${totalPairs}) pasangan tepat.`;
+      }
+    } else {
+      sound.playError();
+      if (this.posttestHint) {
+        this.posttestHint.textContent = `${correctCount} dari ${totalPairs} pasangan tepat. Periksa pembahasan di bawah.`;
+      }
+    }
+
+    // Render kartu dengan status verifikasi
+    this.renderMatchingCards();
+
+    // Buat daftar kunci pasangan yang tepat
+    const rightOriginalOrder = (q.Pasangan_Kanan || '').split('|').map(s => s.trim());
+    const pairsSummary = leftItems
+      .map((item, idx) => `• <strong>${item.text}</strong> ➔ ${rightOriginalOrder[idx] || '-'}`)
+      .join('<br>');
+
+    if (this.posttestExplanationBox) {
+      this.posttestExplanationBox.innerHTML = `<strong>Kunci Pasangan Tepat:</strong><br>${pairsSummary}<br><br><strong>Pembahasan:</strong> ${q.Pembahasan || ''}`;
+      this.posttestExplanationBox.style.display = 'block';
+    }
+
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.disabled = false;
+    }
+  }
+
+  nextPosttestQuestion() {
+    const total = this.posttestQuestions.length || 15;
+    if (this.posttestIndex < total - 1) {
+      this.posttestIndex++;
+      this.renderPosttestQuestion();
+    } else {
+      this.finishPosttest();
+    }
+  }
+
+  async finishPosttest() {
+    let totalEarned = 0;
+    let mcqCorrect = 0;
+    let matchingFullCorrect = 0;
+    let matchingPairsCorrect = 0;
+    let matchingPairsTotal = 0;
+
+    const total = this.posttestQuestions.length || 15;
+
+    this.posttestQuestions.forEach((q, idx) => {
+      const ans = this.posttestAnswers[idx];
+      if (ans) {
+        totalEarned += (ans.earnedPoints || 0);
+        if (ans.type === 'mcq' && ans.isCorrect) mcqCorrect++;
+        if (ans.type === 'matching') {
+          matchingPairsCorrect += (ans.correctCount || 0);
+          matchingPairsTotal += (ans.totalPairs || 4);
+          if (ans.correctCount === ans.totalPairs) matchingFullCorrect++;
+        }
+      }
+    });
+
+    const finalScore = Math.min(100, Math.round((totalEarned / total) * 100));
+    this.posttestScore = finalScore;
+    dataService.savePosttestScore(finalScore);
+
+    // Kirim & simpan skor ke Leaderboard secara otomatis
+    const student = dataService.getCurrentStudent();
+    const pretestScore = dataService.getPretestScore() || 0;
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    try {
+      await dataService.submitScore({
+        timestamp: timestamp,
+        nisn: student?.NISN || '-',
+        nama: student?.Nama || 'Siswa',
+        nilaiPretest: pretestScore,
+        nilaiPosttest: finalScore,
+        totalSkor: finalScore
+      });
+    } catch (e) {
+      console.warn('[Posttest] Gagal memperbarui leaderboard:', e);
+    }
+
     sound.playFanfare();
-    this.quizBody.style.display = 'none';
-    this.quizFooter.style.display = 'none';
-    this.quizResultScreen.style.display = 'flex';
 
-    const finalPoints = this.quizScore * 10;
-    this.quizFinalScore.textContent = `${finalPoints} / 100`;
+    // Kalkulasi N-Gain Score (Hake, 1998)
+    const delta = finalScore - pretestScore;
+    let nGain = 0;
+    if (100 - pretestScore <= 0) {
+      nGain = finalScore >= 100 ? 1.0 : 0.0;
+    } else {
+      nGain = Math.round(((finalScore - pretestScore) / (100 - pretestScore)) * 100) / 100;
+    }
+    const nGainPercent = Math.round(nGain * 100);
+
+    let nGainCategory = 'Rendah';
+    let nGainCatClass = 'low';
+    let nGainDesc = `Peningkatan pemahaman materi tergolong rendah (g = ${nGain.toFixed(2)}). Disarankan mempelajari kembali materi pada Slide 4–14.`;
+
+    if (nGain >= 0.70) {
+      nGainCategory = 'Tinggi';
+      nGainCatClass = 'high';
+      nGainDesc = `Luar biasa! Peningkatan pemahaman materi tergolong tinggi (g = ${nGain.toFixed(2)}, efektivitas ${nGainPercent}%). Konsep terserap maksimal.`;
+    } else if (nGain >= 0.30) {
+      nGainCategory = 'Sedang';
+      nGainCatClass = 'mid';
+      nGainDesc = `Bagus! Terjadi peningkatan pemahaman yang cukup efektif (g = ${nGain.toFixed(2)}, efektivitas ${nGainPercent}%). Konsep utama dipahami dengan baik.`;
+    }
+
+    // Tampilkan Layar Hasil
+    if (this.posttestQuizView) this.posttestQuizView.style.display = 'none';
+    if (this.quizResultScreen) this.quizResultScreen.style.display = 'flex';
+
+    if (this.posttestSummaryName) this.posttestSummaryName.textContent = student?.Nama || 'Siswa';
+    if (this.posttestSummaryClass) this.posttestSummaryClass.textContent = student?.Kelas || '-';
+    if (this.posttestSummaryNISN) this.posttestSummaryNISN.textContent = student?.NISN || '-';
+
+    if (this.posttestFinalScore) {
+      this.posttestFinalScore.textContent = `${finalScore} / 100`;
+    }
+
+    if (this.posttestScoreBreakdown) {
+      this.posttestScoreBreakdown.textContent = `Pilihan Ganda: ${mcqCorrect} / 10 • Mencocokkan: ${matchingFullCorrect} / 5 Sempurna (${matchingPairsCorrect}/${matchingPairsTotal} Pasangan)`;
+    }
+
+    if (this.posttestCompPretest) {
+      this.posttestCompPretest.textContent = pretestScore !== null ? `${pretestScore}` : '0';
+    }
+
+    if (this.posttestCompPosttest) {
+      this.posttestCompPosttest.textContent = `${finalScore}`;
+    }
+
+    if (this.posttestCompGain) {
+      this.posttestCompGain.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+      this.posttestCompGain.className = delta > 0 ? 'comp-val gain-pos' : (delta < 0 ? 'comp-val gain-neg' : 'comp-val');
+    }
+
+    if (this.posttestCompNGain) {
+      this.posttestCompNGain.textContent = `${nGain.toFixed(2)}`;
+    }
+
+    if (this.posttestCompNGainBadge) {
+      this.posttestCompNGainBadge.textContent = `${nGainCategory} (${nGainPercent}%)`;
+      this.posttestCompNGainBadge.className = `comp-sub ${nGainCatClass}`;
+    }
+
+    if (this.ngainCategoryPill) {
+      this.ngainCategoryPill.textContent = nGainCategory;
+      this.ngainCategoryPill.className = `ngain-category-pill ${nGainCatClass}`;
+    }
+
+    if (this.ngainDescText) {
+      this.ngainDescText.textContent = nGainDesc;
+    }
+
+    if (this.ngainProgressFill) {
+      this.ngainProgressFill.style.width = `${Math.min(100, Math.max(0, nGainPercent))}%`;
+    }
+
+    // Default ke tab ringkasan
+    this.switchPosttestTab('summary');
+    // Pre-render data leaderboard di latar belakang
+    this.renderLeaderboard();
+
+    this.showToast(`Post-test selesai! Skor akhir: ${finalScore} (N-Gain: ${nGain.toFixed(2)})`);
+  }
+
+  switchPosttestTab(tabName = 'summary') {
+    if (tabName === 'leaderboard') {
+      if (this.tabBtnSummary) {
+        this.tabBtnSummary.classList.remove('active');
+        this.tabBtnSummary.setAttribute('aria-selected', 'false');
+      }
+      if (this.tabBtnLeaderboard) {
+        this.tabBtnLeaderboard.classList.add('active');
+        this.tabBtnLeaderboard.setAttribute('aria-selected', 'true');
+      }
+      if (this.tabPaneSummary) this.tabPaneSummary.style.display = 'none';
+      if (this.tabPaneLeaderboard) {
+        this.tabPaneLeaderboard.style.display = 'flex';
+        this.renderLeaderboard();
+      }
+    } else {
+      if (this.tabBtnLeaderboard) {
+        this.tabBtnLeaderboard.classList.remove('active');
+        this.tabBtnLeaderboard.setAttribute('aria-selected', 'false');
+      }
+      if (this.tabBtnSummary) {
+        this.tabBtnSummary.classList.add('active');
+        this.tabBtnSummary.setAttribute('aria-selected', 'true');
+      }
+      if (this.tabPaneLeaderboard) this.tabPaneLeaderboard.style.display = 'none';
+      if (this.tabPaneSummary) this.tabPaneSummary.style.display = 'flex';
+    }
+  }
+
+  async renderLeaderboard() {
+    if (!this.leaderboardTableBody) return;
+    this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #94a3b8;">Memuat data papan peringkat...</td></tr>`;
+
+    try {
+      const list = await dataService.getLeaderboard();
+      const currentStudent = dataService.getCurrentStudent();
+      const currentNisn = String(currentStudent?.NISN || '').trim();
+
+      if (!list || list.length === 0) {
+        this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #94a3b8;">Belum ada data evaluasi tercatat.</td></tr>`;
+        return;
+      }
+
+      // Hitung statistik kelas
+      const totalStudents = list.length;
+      const sumPost = list.reduce((acc, cur) => acc + Number(cur.Total_Skor ?? cur.Nilai_Posttest ?? 0), 0);
+      const avgScore = Math.round(sumPost / (totalStudents || 1));
+      const topScore = Math.max(...list.map(cur => Number(cur.Total_Skor ?? cur.Nilai_Posttest ?? 0)));
+
+      // Posisi siswa aktif
+      let myRank = null;
+      list.forEach((item, idx) => {
+        if (currentNisn && String(item.NISN || item.nisn).trim() === currentNisn) {
+          myRank = idx + 1;
+        }
+      });
+
+      if (this.myRankText) {
+        this.myRankText.textContent = myRank ? `Peringkat #${myRank} dari ${totalStudents} Siswa` : `Belum Terdaftar (Ikuti Kuis)`;
+      }
+      if (this.leaderboardAvgPill) {
+        this.leaderboardAvgPill.textContent = `Rata-rata: ${avgScore}`;
+      }
+      if (this.leaderboardTopPill) {
+        this.leaderboardTopPill.textContent = `Tertinggi: ${topScore}`;
+      }
+
+      // Render Baris Tabel
+      this.leaderboardTableBody.innerHTML = '';
+      list.forEach((item, idx) => {
+        const rank = idx + 1;
+        const isCurrent = currentNisn && String(item.NISN || item.nisn).trim() === currentNisn;
+        const tr = document.createElement('tr');
+        if (isCurrent) tr.classList.add('is-current-student');
+
+        // Rank Badge
+        let rankClass = 'rank-default';
+        if (rank === 1) rankClass = 'rank-1';
+        else if (rank === 2) rankClass = 'rank-2';
+        else if (rank === 3) rankClass = 'rank-3';
+
+        // Delta Peningkatan
+        const pre = Number(item.Nilai_Pretest ?? item.nilaiPretest ?? 0);
+        const post = Number(item.Nilai_Posttest ?? item.nilaiPosttest ?? item.Total_Skor ?? 0);
+        const delta = post - pre;
+        let deltaHtml = `<span class="gain-pill zero">0</span>`;
+        if (delta > 0) {
+          deltaHtml = `<span class="gain-pill pos">+${delta}</span>`;
+        } else if (delta < 0) {
+          deltaHtml = `<span class="gain-pill neg">${delta}</span>`;
+        }
+
+        // N-Gain
+        const nGain = Number(item.Nilai_NGain ?? 0);
+        let ngainClass = 'low';
+        let ngainLabel = 'Rendah';
+        if (nGain >= 0.70) {
+          ngainClass = 'high';
+          ngainLabel = 'Tinggi';
+        } else if (nGain >= 0.30) {
+          ngainClass = 'mid';
+          ngainLabel = 'Sedang';
+        }
+
+        const nameHtml = `${item.Nama || item.nama || 'Siswa'}${isCurrent ? '<span class="current-user-tag">Anda</span>' : ''}`;
+
+        tr.innerHTML = `
+          <td class="col-rank"><span class="rank-badge ${rankClass}">#${rank}</span></td>
+          <td class="col-name">${nameHtml}</td>
+          <td class="col-pre">${pre}</td>
+          <td class="col-post"><strong>${post}</strong></td>
+          <td class="col-gain">${deltaHtml}</td>
+          <td class="col-ngain"><span class="ngain-pill ${ngainClass}">${nGain.toFixed(2)} (${ngainLabel})</span></td>
+        `;
+
+        this.leaderboardTableBody.appendChild(tr);
+      });
+    } catch (err) {
+      console.warn('[Leaderboard] Gagal merender data:', err);
+      this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #f87171;">Terjadi kesalahan saat memuat data peringkat.</td></tr>`;
+    }
+  }
+
+  async openLeaderboard(tab = 'leaderboard') {
+    sound.playPop();
+
+    // Muat data siswa aktif & skor
+    const student = dataService.getCurrentStudent();
+    const pretestScore = dataService.getPretestScore();
+    const posttestScore = dataService.getPosttestScore();
+
+    if (this.posttestSummaryName) this.posttestSummaryName.textContent = student?.Nama || 'Siswa';
+    if (this.posttestSummaryClass) this.posttestSummaryClass.textContent = student?.Kelas || '-';
+    if (this.posttestSummaryNISN) this.posttestSummaryNISN.textContent = student?.NISN || '-';
+
+    if (posttestScore !== null && posttestScore !== undefined) {
+      if (this.posttestFinalScore) this.posttestFinalScore.textContent = `${posttestScore} / 100`;
+      if (this.posttestCompPretest) this.posttestCompPretest.textContent = pretestScore !== null ? `${pretestScore}` : '0';
+      if (this.posttestCompPosttest) this.posttestCompPosttest.textContent = `${posttestScore}`;
+      const gain = posttestScore - (pretestScore || 0);
+      if (this.posttestCompGain) this.posttestCompGain.textContent = gain >= 0 ? `+${gain}` : `${gain}`;
+
+      // N-Gain
+      const pre = Number(pretestScore || 0);
+      const post = Number(posttestScore);
+      let nGain = 0;
+      if (100 - pre <= 0) {
+        nGain = post >= 100 ? 1.0 : 0.0;
+      } else {
+        nGain = Math.round(((post - pre) / (100 - pre)) * 100) / 100;
+      }
+      const nGainPercent = Math.round(nGain * 100);
+      let nGainCategory = 'Rendah';
+      let nGainCatClass = 'low';
+      let nGainDesc = `Peningkatan pemahaman materi tergolong rendah (g = ${nGain.toFixed(2)}). Disarankan mempelajari kembali materi vulkanisme.`;
+      if (nGain >= 0.70) {
+        nGainCategory = 'Tinggi';
+        nGainCatClass = 'high';
+        nGainDesc = `Luar biasa! Peningkatan pemahaman materi tergolong tinggi (g = ${nGain.toFixed(2)}, efektivitas ${nGainPercent}%). Konsep terserap maksimal.`;
+      } else if (nGain >= 0.30) {
+        nGainCategory = 'Sedang';
+        nGainCatClass = 'mid';
+        nGainDesc = `Bagus! Terjadi peningkatan pemahaman yang cukup efektif (g = ${nGain.toFixed(2)}, efektivitas ${nGainPercent}%).`;
+      }
+
+      if (this.posttestCompNGain) this.posttestCompNGain.textContent = `${nGain.toFixed(2)}`;
+      if (this.posttestCompNGainBadge) {
+        this.posttestCompNGainBadge.textContent = `${nGainCategory} (${nGainPercent}%)`;
+        this.posttestCompNGainBadge.className = `comp-sub ${nGainCatClass}`;
+      }
+      if (this.ngainCategoryPill) {
+        this.ngainCategoryPill.textContent = nGainCategory;
+        this.ngainCategoryPill.className = `ngain-category-pill ${nGainCatClass}`;
+      }
+      if (this.ngainDescText) this.ngainDescText.textContent = nGainDesc;
+      if (this.ngainProgressFill) this.ngainProgressFill.style.width = `${Math.min(100, Math.max(0, nGainPercent))}%`;
+    }
+
+    if (this.posttestQuizView) this.posttestQuizView.style.display = 'none';
+    if (this.quizResultScreen) this.quizResultScreen.style.display = 'flex';
+
+    if (this.quizModal) {
+      this.quizModal.style.display = 'flex';
+      void this.quizModal.offsetWidth;
+      this.quizModal.classList.add('active');
+    }
+
+    this.switchPosttestTab(tab);
+    await this.renderLeaderboard();
+  }
+
+  closePosttest() {
+    sound.playPop();
+    if (this.quizModal) {
+      this.quizModal.style.display = 'none';
+      this.quizModal.classList.remove('active');
+    }
   }
 
   // --- PWA Installation & Service Worker ---

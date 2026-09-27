@@ -47,16 +47,28 @@ Proyek ini telah dikonfigurasi untuk hosting statis di Vercel:
 - Konfigurasi cache (`Cache-Control: immutable` untuk aset statis) tercantum di `vercel.json`.
 - Berkas server lokal dan pengujian dikecualikan dari bundle deployment melalui `.vercelignore`.
 
+## Integrasi Basis Data (Google Sheets)
+
+Aplikasi mendukung mode luring (offline) dan daring (online) yang diatur melalui konstanta `CONFIG` pada [js/data-service.js](file:///c:/Project/solusi.toriq/Materi%20Interaktif/js/data-service.js):
+- **Mode `LOCAL`**: Menggunakan file JSON lokal [data/materi_evaluasi.json](file:///c:/Project/solusi.toriq/Materi%20Interaktif/data/materi_evaluasi.json) dengan penyimpanan peramban lokal.
+- **Mode `GOOGLE_SHEETS`**: Terhubung ke Google Spreadsheet via Web App [Code.gs](file:///c:/Project/solusi.toriq/Materi%20Interaktif/Code.gs) untuk sinkronisasi nilai siswa dan leaderboard real-time.
+- Panduan aktivasi lengkap tersedia pada [PANDUAN_MIGRASI_GOOGLE_SHEETS.md](file:///c:/Project/solusi.toriq/Materi%20Interaktif/PANDUAN_MIGRASI_GOOGLE_SHEETS.md).
+
 ## Struktur Berkas
 
 - `index.html`: Struktur utama antarmuka slide, overlay tombol, dan container media.
-- `server.js`: Server statis lokal berbasis Node.js dengan dukungan HTTP Range untuk streaming video MP4.
+- `server.js`: Server statis lokal berbasis Node.js dengan dukungan HTTP Range.
 - `sw.js`: Service Worker untuk fungsionalitas luring (offline cache).
 - `manifest.json`: Konfigurasi metadata Progressive Web App.
 - `vercel.json`: Konfigurasi routing dan header cache pada hosting Vercel.
-- `css/style.css`: Tata letak responsif 16:9, HUD mobile, dan animasi UI.
-- `js/app.js`: Logika interaksi navigasi, drawer, gestur, dan evaluasi.
+- `Code.gs`: Skrip Google Apps Script backend untuk integrasi spreadsheet online.
+- `PANDUAN_MIGRASI_GOOGLE_SHEETS.md`: Panduan teknis deployment Google Apps Script.
+- `ROADMAP_FASE_3_7.md`: Dokumentasi roadmap implementasi sistem evaluasi dan leaderboard.
+- `css/style.css`: Tata letak responsif 16:9, modal glassmorphism, dan animasi UI.
+- `js/app.js`: Logika interaksi navigasi, drawer, gestur, engine pretest & posttest.
+- `js/data-service.js`: Abstraksi data adapter lokal/online dan engine N-Gain.
 - `js/audio.js`: Synthesizer efek suara native Web Audio API.
 - `js/volcano3d.js`: Simulator visual 3D gunung berapi berbasis Canvas.
-- `js/quiz-data.js`: Bank data kuis dan mini-game formatif.
-- `assets/slides/`: Aset video (`slide_1.mp4`, `slide_2.mp4`) dan gambar slide WebP (1-16).
+- `data/materi_evaluasi.json`: Dataset lokal (Siswa, Pretest, Posttest, Leaderboard).
+- `data/materi_evaluasi.xlsx`: Dataset format Excel untuk diimpor ke Google Sheets.
+- `assets/slides/`: Aset gambar WebP slide 1-16 terkompresi optimal.
