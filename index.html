@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
-  <meta name="description" content="Media Pembelajaran Interaktif PWA - Mbah Kanjeng Sepuh & Petualangan Gunung Berapi">
+  <meta name="description"
+    content="Interactive PWA Learning Media - The Legend of Mbah Kanjeng Sepuh & Volcanic Wonders">
 
   <title>The Legend of Mbah Kanjeng Sepuh</title>
 
   <!-- PWA Manifest & Icons -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+  <link rel="alternate icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 
   <!-- Preconnect Google Fonts for performance -->
@@ -23,7 +25,7 @@
     rel="stylesheet">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=39">
 </head>
 
 <body>
@@ -34,51 +36,56 @@
     <!-- Splash Screen / Audio Unlock & NISN Validation Overlay -->
     <aside class="splash-overlay" id="splash-screen">
       <div class="splash-card">
-        <span class="splash-badge">Media Pembelajaran Interaktif</span>
+        <button type="button" class="splash-close-btn" id="btn-close-splash" title="Close" aria-label="Close"
+          style="display: none;">✕</button>
+        <span class="splash-badge">Interactive Learning Media</span>
         <h1 class="splash-title">The Legend of Mbah Kanjeng Sepuh</h1>
-        <p class="splash-subtitle">Masukkan NIS atau NISN Anda untuk memulai evaluasi</p>
+        <p class="splash-subtitle">Enter your Student ID (NIS or NISN) to begin</p>
 
         <!-- Form Input & Validasi NIS/NISN -->
         <div class="splash-nisn-box">
           <div class="splash-input-group">
-            <input type="text" id="input-nisn" class="splash-input-nisn" placeholder="" maxlength="15" inputmode="numeric" autocomplete="off">
-            <button type="button" class="splash-btn-check" id="btn-check-nisn" title="Periksa NIS atau NISN">Periksa</button>
+            <input type="text" id="input-nisn" class="splash-input-nisn" placeholder="" maxlength="15"
+              inputmode="numeric" autocomplete="off">
+            <button type="button" class="splash-btn-check" id="btn-check-nisn" title="Check Student ID">Check</button>
           </div>
           <div class="splash-feedback" id="splash-nisn-feedback"></div>
         </div>
 
         <!-- Info Siswa Terverifikasi -->
         <div class="splash-student-card" id="splash-student-card" style="display: none;">
-          <div class="student-card-header">Siswa Terverifikasi</div>
+          <div class="student-card-header">Verified Student</div>
           <div class="student-card-name" id="student-name">-</div>
           <div class="student-card-meta">
             <span>NIS: <b id="student-nis">-</b></span>
             <span>NISN: <b id="student-nisn">-</b></span>
-            <span>Kelas: <b id="student-class">-</b></span>
+            <span>Class: <b id="student-class">-</b></span>
           </div>
         </div>
 
         <div class="splash-action-group" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          <button class="splash-btn-start" id="btn-start-splash" style="display: none;" title="Mulai Pretest">
-            Mulai Pretest ➔
+          <button class="splash-btn-start" id="btn-start-splash" style="display: none;" title="Start Pretest">
+            Start Pretest ➔
           </button>
-          <button type="button" class="splash-btn-retake" id="btn-retake-pretest" style="display: none;" title="Kerjakan Ulang Pretest">
-            Kerjakan Ulang Pretest
+          <button type="button" class="splash-btn-retake" id="btn-retake-pretest" style="display: none;"
+            title="Retake Pretest">
+            Retake Pretest
           </button>
         </div>
       </div>
     </aside>
 
     <!-- Pretest Interactive Modal Dialog (Fase 3) -->
-    <div class="pretest-modal-overlay" id="pretest-modal" style="display: none;" aria-modal="true" role="dialog" aria-labelledby="pretest-heading">
+    <div class="pretest-modal-overlay" id="pretest-modal" style="display: none;" aria-modal="true" role="dialog"
+      aria-labelledby="pretest-heading">
       <div class="pretest-modal-card">
         <!-- Pretest Active Quiz View -->
         <div class="pretest-quiz-view" id="pretest-quiz-view">
           <!-- Header -->
           <div class="pretest-header">
             <div class="pretest-meta-info">
-              <span class="pretest-badge">Evaluasi Awal</span>
-              <span class="pretest-counter" id="pretest-counter">Soal 1 dari 5</span>
+              <span class="pretest-badge">Diagnostic Pretest</span>
+              <span class="pretest-counter" id="pretest-counter">Question 1 of 5</span>
             </div>
             <div class="pretest-student-tag" id="pretest-student-tag">-</div>
           </div>
@@ -92,7 +99,7 @@
           <div class="pretest-body">
             <div class="pretest-question-box">
               <p class="pretest-question-text" id="pretest-question-text">
-                Memuat pertanyaan pretest...
+                Loading pretest questions...
               </p>
             </div>
             <div class="pretest-options-list" id="pretest-options-list">
@@ -102,31 +109,32 @@
 
           <!-- Footer Navigation -->
           <div class="pretest-footer">
-            <div class="pretest-hint" id="pretest-hint">Pilih salah satu jawaban untuk melanjutkan.</div>
+            <div class="pretest-hint" id="pretest-hint">Select an option to continue.</div>
             <button type="button" class="pretest-next-btn" id="btn-pretest-next" disabled>
-              Soal Selanjutnya ➔
+              Next Question ➔
             </button>
           </div>
         </div>
 
         <!-- Pretest Result Completion View -->
         <div class="pretest-result-view" id="pretest-result-view" style="display: none;">
-          <span class="pretest-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
-            Evaluasi Selesai
+          <span class="pretest-badge"
+            style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
+            Evaluation Complete
           </span>
-          <h2 class="pretest-result-title" id="pretest-heading">Hasil Evaluasi Pretest</h2>
+          <h2 class="pretest-result-title" id="pretest-heading">Pretest Evaluation Results</h2>
           <p class="pretest-result-desc">
-            Nilai diagnostik awal Anda telah tercatat ke sistem. Silakan lanjutkan untuk mempelajari modul interaktif.
+            Diagnostic pretest score recorded. Proceed to explore the learning modules.
           </p>
 
           <div class="pretest-score-box">
-            <span class="pretest-score-label">Skor Pretest</span>
+            <span class="pretest-score-label">Pretest Score</span>
             <div class="pretest-score-num" id="pretest-final-score">0 / 100</div>
-            <div class="pretest-score-sub" id="pretest-score-detail">Jawaban benar: 0 dari 5 soal</div>
+            <div class="pretest-score-sub" id="pretest-score-detail">Correct answers: 0 of 5 questions</div>
           </div>
 
           <button type="button" class="pretest-finish-btn" id="btn-pretest-finish">
-            Lanjut ke Materi Pembelajaran ➔
+            Proceed to Material ➔
           </button>
         </div>
       </div>
@@ -137,48 +145,53 @@
       <div id="progress-bar-fill" class="progress-strip-fill"></div>
     </div>
 
-    <!-- Floating Top Utility HUD -->
+    <!-- Floating Top Utility HUD (Terbagi 2: Kiri di atas Menu Utama, Kanan di atas Daftar Isi) -->
     <header class="top-hud" id="top-hud">
-      <div id="slide-counter-pill" class="hud-pill"><span class="pill-prefix">Slide </span>1 / 16</div>
-
-      <!-- Quick Menu Toggle (Mobile / Tablet) -->
-      <button id="btn-hud-menu-toggle" class="hud-btn hud-menu-toggle" aria-label="Menu Pengaturan" aria-expanded="false" title="Pengaturan & Utilitas">
-        <svg class="hud-icon icon-gear" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </button>
-
-      <!-- Utility Actions (Horizontal di Desktop, Popover di Layar Sentuh/Mobile) -->
-      <div class="hud-actions" id="hud-actions-menu">
-        <button id="btn-toggle-sfx" class="hud-btn active" title="Suara Efek (SFX)">
-          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Posisi 1 (Kiri Atas): Di atas Menu Utama (Slide Counter & Audio Aktif) -->
+      <div class="hud-group hud-group-left" id="hud-group-left">
+        <div id="slide-counter-pill" class="hud-pill"><span class="pill-prefix">Slide </span>1 / 16</div>
+        <button id="btn-toggle-sfx" class="hud-btn active" title="Sound Effects (SFX)">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
           </svg>
-          <span class="hud-btn-text">Audio Aktif</span>
+          <span class="hud-btn-text">Audio On</span>
         </button>
-        <button id="btn-toggle-fullscreen" class="hud-btn" title="Mode Layar Penuh">
-          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </div>
+
+      <!-- Quick Menu Toggle (Mobile / Tablet) - Hidden untuk kompatibilitas script -->
+      <button id="btn-hud-menu-toggle" class="hud-btn hud-menu-toggle" aria-label="Settings Menu" aria-expanded="false"
+        title="Settings & Utilities" style="display:none;"></button>
+
+      <!-- Posisi 2 (Kanan Atas): Di atas Daftar Isi (Layar Penuh, Putar Layar, Pasang Aplikasi) -->
+      <div class="hud-group hud-group-right" id="hud-actions-menu">
+        <button id="btn-toggle-fullscreen" class="hud-btn" title="Fullscreen Mode">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+            </path>
           </svg>
-          <span class="hud-btn-text">Layar Penuh</span>
+          <span class="hud-btn-text">Fullscreen</span>
         </button>
-        <button id="btn-flip-orientation" class="hud-btn hud-btn-rotate" style="display:none;" title="Putar Sudut Orientasi (90° / 270°)">
-          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btn-flip-orientation" class="hud-btn hud-btn-rotate" style="display:none;"
+          title="Rotate Screen Angle (90° / 270°)">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"></polyline>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
-          <span class="hud-btn-text">Putar Layar</span>
+          <span class="hud-btn-text">Rotate Screen</span>
         </button>
-        <button id="btn-install-pwa" class="hud-btn" style="display:none;" title="Pasang ke HP / Desktop">
-          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btn-install-pwa" class="hud-btn" style="display:none;" title="Install App">
+          <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span class="hud-btn-text">Pasang Aplikasi</span>
+          <span class="hud-btn-text">Install App</span>
         </button>
       </div>
     </header>
@@ -188,316 +201,1075 @@
 
       <!-- SLIDE 1: Cover & Welcome -->
       <article class="slide-frame active" data-slide="1">
-        <video class="slide-bg-video" id="video-slide-1" playsinline loop muted preload="auto" poster="assets/slides/slide_1.webp">
+        <video class="slide-bg-video" id="video-slide-1" playsinline loop muted preload="auto"
+          poster="assets/slides/slide_1.webp">
           <source src="assets/slides/slide_1.mp4" type="video/mp4">
         </video>
         <div class="interactive-overlay">
-          <button class="btn-mulai-belajar" id="btn-slide1-start" title="Mulai Belajar!"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="2" title="Lanjut ke Slide 2"></button>
+          <button class="btn-mulai-belajar" id="btn-slide1-start" title="Start Learning"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="2" title="Next to Slide 2"></button>
         </div>
       </article>
 
       <!-- SLIDE 2: Intro / Start -->
       <article class="slide-frame" data-slide="2">
-        <video class="slide-bg-video" id="video-slide-2" playsinline loop muted preload="metadata" poster="assets/slides/slide_2.webp">
+        <video class="slide-bg-video" id="video-slide-2" playsinline loop muted preload="metadata"
+          poster="assets/slides/slide_2.webp">
           <source src="assets/slides/slide_2.mp4" type="video/mp4">
         </video>
         <div class="interactive-overlay">
-          <button class="btn-start-cover" id="btn-slide2-start" title="Start Belajar"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="1" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="3" title="Lanjut ke Menu"></button>
+          <button class="btn-start-cover" id="btn-slide2-start" title="Start Learning"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="1" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="3" title="Next to Menu"></button>
         </div>
       </article>
 
       <!-- SLIDE 3: Interactive Menu Hub -->
       <article class="slide-frame" data-slide="3">
-        <img class="slide-bg-img" src="assets/slides/slide_3.webp" alt="Slide 3 Menu Interaktif" loading="lazy"
+        <img class="slide-bg-img" src="assets/slides/slide_3.webp" alt="Slide 3 Interactive Menu" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
           <!-- 6 Main Hub Interactive Buttons -->
           <div class="menu-grid-hotspots">
             <!-- Kolom 1 Baris 1: Game -> Slide 4 -->
-            <button class="menu-item-hotspot btn-menu-game btn_game btn-game" data-goto="4" title="1. Discussion"></button>
-            <!-- Kolom 1 Baris 2: Material -> Slide 6 -->
-            <button class="menu-item-hotspot btn-menu-material btn_material btn-material" data-goto="6" title="2. Material"></button>
+            <button class="menu-item-hotspot btn-menu-game btn_game btn-game" data-goto="4"
+              title="Game: Let's find me!"></button>
+            <!-- Kolom 1 Baris 2: Material -> Slide 5 -->
+            <button class="menu-item-hotspot btn-menu-material btn_material btn-material" data-goto="5"
+              title="Material"></button>
             <!-- Kolom 1 Baris 3: Augmented Reality (AR) -> Slide 14 -->
-            <button class="menu-item-hotspot btn-menu-ar btn_ar btn-ar" data-goto="14" title="3. Augmented Reality (AR)"></button>
-            <!-- Kolom 2 Baris 1: Kuis Interaktif -> Slide 5 -->
-            <button class="menu-item-hotspot btn-menu-quiz btn_quiz btn-quiz" data-goto="5" title="4. Purpose"></button>
-            <!-- Kolom 2 Baris 2: Video Edukasi -> Slide 13 -->
-            <button class="menu-item-hotspot btn-menu-video btn_video btn-video" data-goto="13" title="5. Video Edukasi"></button>
-            <!-- Kolom 2 Baris 3: Glosarium -> Slide 15 -->
-            <button class="menu-item-hotspot btn-menu-glosarium btn_glosarium btn-glosarium" data-goto="15" title="6. Kuis Interaktif"></button>
+            <button class="menu-item-hotspot btn-menu-ar btn_ar btn-ar is-locked" id="btn-menu-ar" data-goto="14"
+              title="Augmented Reality (AR)">
+              <span class="hotspot-lock-badge" id="hotspot-ar-lock-badge">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <path
+                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                </svg>
+                Slide 13
+              </span>
+            </button>
+            <!-- Kolom 2 Baris 1: Kuis Interaktif -> Slide 15 -->
+            <button class="menu-item-hotspot btn-menu-quiz btn_quiz btn-quiz is-locked" id="btn-menu-quiz"
+              data-goto="15" title="Quiz">
+              <span class="hotspot-lock-badge" id="hotspot-quiz-lock-badge">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <path
+                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                </svg>
+                Slide 14
+              </span>
+            </button>
+            <!-- Kolom 2 Baris 2: Video Edukasi -> Slide 12 -->
+            <button class="menu-item-hotspot btn-menu-video btn_video btn-video is-locked" id="btn-menu-video"
+              data-goto="12" title="Educational Video">
+              <span class="hotspot-lock-badge" id="hotspot-video-lock-badge">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <path
+                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                </svg>
+                Slide 12
+              </span>
+            </button>
+            <!-- Kolom 2 Baris 3: Glosarium -> Slide 16 -->
+            <button class="menu-item-hotspot btn-menu-glosarium btn_glosarium btn-glosarium" id="btn-menu-glosarium"
+              data-goto="16" title="Glosarium"></button>
           </div>
           <!-- Corner Navigation -->
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" id="btn-open-drawer-3" title="Daftar Isi Slide"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="2" title="Kembali ke Intro"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="4" title="Lanjut ke Diskusi"></button>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" id="btn-open-drawer-3" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" id="btn-slide3-prev" data-goto="2" title="Back to Intro"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="4" title="Next to Game"></button>
         </div>
       </article>
 
-      <!-- SLIDE 4: Let's Discuss! -->
+      <!-- SLIDE 4: Game - Let's find me! -->
       <article class="slide-frame" data-slide="4">
-        <img class="slide-bg-img" src="assets/slides/slide_4.webp" alt="Slide 4 Diskusi" loading="lazy"
-          decoding="async">
+        <img class="slide-bg-img" src="assets/slides/slide_4.webp" alt="Slide 4 Game" loading="lazy" decoding="async">
         <div class="interactive-overlay">
           <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="3" title="Kembali ke Slide 3"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="5" title="Lanjut ke Slide 5"></div>
+          <div class="slide-half-nav slide-half-prev" data-goto="3" title="Back to Slide 3"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="5" title="Next to Slide 5"></div>
 
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="3" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="5" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 5: Learning Goals -->
-      <article class="slide-frame" data-slide="5">
-        <img class="slide-bg-img" src="assets/slides/slide_5.webp" alt="Slide 5 Tujuan Pembelajaran" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="4" title="Kembali ke Slide 4"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="6" title="Lanjut ke Slide 6"></div>
-
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="4" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="6" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 6: Meaning of Legend -->
-      <article class="slide-frame" data-slide="6">
-        <img class="slide-bg-img" src="assets/slides/slide_6.webp" alt="Slide 6 Definisi Legenda" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="5" title="Kembali ke Slide 5"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="7" title="Lanjut ke Slide 7"></div>
-
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="5" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="7" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 7: The Generic Structure -->
-      <article class="slide-frame" data-slide="7">
-        <img class="slide-bg-img" src="assets/slides/slide_7.webp" alt="Slide 7 Generic Structure" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="6" title="Kembali ke Slide 6"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="8" title="Lanjut ke Slide 8"></div>
-
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="6" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="8" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 8: Orientation Mbah Kanjeng Sepuh -->
-      <article class="slide-frame" data-slide="8">
-        <img class="slide-bg-img" src="assets/slides/slide_8.webp" alt="Slide 8 Orientation" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="7" title="Kembali ke Slide 7"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="9" title="Lanjut ke Slide 9"></div>
-
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="7" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="9" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 9: Complication Mbah Kanjeng Sepuh -->
-      <article class="slide-frame" data-slide="9">
-        <img class="slide-bg-img" src="assets/slides/slide_9.webp" alt="Slide 9 Complication" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="8" title="Kembali ke Slide 8"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="10" title="Lanjut ke Slide 10"></div>
-
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="8" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="10" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 10: Formative Airplane / Verb Game -->
-      <article class="slide-frame" data-slide="10">
-        <img class="slide-bg-img" src="assets/slides/slide_10.webp" alt="Slide 10 Formatif" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="9" title="Kembali ke Slide 9"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="11" title="Lanjut ke Slide 11"></div>
-
-          <!-- Wordwall Embedded Interactive Activity -->
-          <div class="wordwall-embed-wrapper" id="wordwall-embed-box">
-            <iframe id="wordwall-frame"
-              data-src="https://wordwall.net/id/embed/6f2aa61931a9401081cdae7b7d9c5dc3?themeId=46" src="about:blank"
-              title="Let's fly to explore the verb conjugation! - Wordwall" allowfullscreen allow="autoplay; fullscreen"
+          <!-- Wordwall Embedded Interactive Activity (Slide 4) -->
+          <div class="wordwall-embed-wrapper" id="wordwall-embed-box-4">
+            <iframe id="wordwall-frame-4" data-src="https://wordwall.net/embed/play/119932/671/540?wwmethod=link"
+              src="about:blank" title="Let's find me! - Wordwall Game" allowfullscreen allow="autoplay; fullscreen"
               loading="lazy">
             </iframe>
           </div>
 
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="9" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="11" title="Lanjut"></button>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="3" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="5" title="Next"></button>
         </div>
       </article>
 
-      <!-- SLIDE 11: Manfaat Gunung Berapi -->
-      <article class="slide-frame" data-slide="11">
-        <img class="slide-bg-img" src="assets/slides/slide_11.webp" alt="Slide 11 Manfaat Gunung Berapi" loading="lazy"
-          decoding="async">
+      <!-- SLIDE 5: The Meaning of Legend (Definition, Goal, Reason) -->
+      <article class="slide-frame" data-slide="5">
+        <img class="slide-bg-img" src="assets/slides/slide_5_background.webp" alt="Slide 5 The Meaning of Legend"
+          loading="lazy" decoding="async">
         <div class="interactive-overlay">
           <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="10" title="Kembali ke Slide 10"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="12" title="Lanjut ke Slide 12"></div>
+          <div class="slide-half-nav slide-half-prev" data-goto="4" title="Back to Slide 4"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="6" title="Next to Slide 6"></div>
 
-          <!-- Checklist interactive items -->
-          <!-- <div class="fact-hotspot-list">
-            <div class="fact-hotspot-item" data-fact="tanah" title="1. Menyuburkan tanah pertanian"></div>
-            <div class="fact-hotspot-item" data-fact="geotermal" title="2. Sumber energi panas bumi"></div>
-            <div class="fact-hotspot-item" data-fact="tambang" title="3. Bahan tambang belerang"></div>
-            <div class="fact-hotspot-item" data-fact="wisata" title="4. Objek wisata alam"></div>
-          </div> -->
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="10" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="12" title="Lanjut"></button>
+          <!-- Papan Interaktif Tiga Poin Pembelajaran -->
+          <div class="slide5-board-container" id="slide5-board-container">
+
+            <!-- Poin 1: Definition -->
+            <div class="slide5-card active" data-point="1" tabindex="0" role="region" aria-label="Point 1: Definition">
+              <div class="slide5-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22">
+                  <path d="M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z" fill="#ea580c" />
+                  <path d="M9 12l2 2 4-4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none" />
+                </svg>
+              </div>
+              <div class="slide5-card-body">
+                <div class="slide5-card-header">
+                  <span class="slide5-badge badge-def">Definition</span>
+                  <button type="button" class="slide5-audio-btn"
+                    data-audio-text="A type of narrative that tells notable figures, places, or events believed by a local community, often blended with mythical or heroic elements."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <p class="slide5-card-text">
+                  A type of narrative that tells <span class="slide5-hl">notable figures, places, or events</span>
+                  believed by a local community, often blended with <span class="slide5-hl">mythical or heroic
+                    elements</span>.
+                </p>
+              </div>
+            </div>
+
+            <!-- Poin 2: Goal -->
+            <div class="slide5-card" data-point="2" tabindex="0" role="region" aria-label="Point 2: Goal and Purpose">
+              <div class="slide5-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22">
+                  <path d="M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z" fill="#ea580c" />
+                  <path d="M9 12l2 2 4-4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none" />
+                </svg>
+              </div>
+              <div class="slide5-card-body">
+                <div class="slide5-card-header">
+                  <span class="slide5-badge badge-goal">Goal / Purpose</span>
+                  <button type="button" class="slide5-audio-btn"
+                    data-audio-text="To entertain readers through engaging narrative storytelling."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <p class="slide5-card-text">
+                  To <span class="slide5-hl">entertain readers</span> through engaging narrative storytelling.
+                </p>
+              </div>
+            </div>
+
+            <!-- Poin 3: Reason -->
+            <div class="slide5-card" data-point="3" tabindex="0" role="region" aria-label="Point 3: Reason and Value">
+              <div class="slide5-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22">
+                  <path d="M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z" fill="#ea580c" />
+                  <path d="M9 12l2 2 4-4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none" />
+                </svg>
+              </div>
+              <div class="slide5-card-body">
+                <div class="slide5-card-header">
+                  <span class="slide5-badge badge-reason">Reason &amp; Cultural Value</span>
+                  <button type="button" class="slide5-audio-btn"
+                    data-audio-text="The story preserves heritage through local history, beliefs, and cultural identity across generations."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <p class="slide5-card-text">
+                  The story <span class="slide5-hl">preserves the heritage</span> through local history, beliefs, and
+                  cultural identity across generations.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="4" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="6" title="Next"></button>
         </div>
       </article>
 
-      <!-- SLIDE 12: Dampak Erupsi & Bahaya -->
-      <article class="slide-frame" data-slide="12">
-        <img class="slide-bg-img" src="assets/slides/slide_12.webp" alt="Slide 12 Dampak Erupsi" loading="lazy"
+      <!-- SLIDE 6: The Generic Structure (Interactive) -->
+      <article class="slide-frame" data-slide="6">
+        <img class="slide-bg-img" src="assets/slides/slide_6.webp" alt="Slide 6 The Generic Structure" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
           <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="11" title="Kembali ke Slide 11"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="13" title="Lanjut ke Slide 13"></div>
+          <div class="slide-half-nav slide-half-prev" data-goto="5" title="Back to Slide 5"></div>
+          <div class="slide-half-nav slide-half-next is-locked" id="slide6-half-next" data-goto="7"
+            title="Next to Slide 7"></div>
 
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="11" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="13" title="Lanjut"></button>
-        </div>
-      </article>
-
-      <!-- SLIDE 13: Kisah Raden Suryodiningrat -->
-      <article class="slide-frame" data-slide="13">
-        <img class="slide-bg-img" src="assets/slides/slide_13.webp" alt="Slide 13 Kisah Raden Suryodiningrat" loading="lazy"
-          decoding="async">
-        <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="12" title="Kembali ke Slide 12"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="14" title="Lanjut ke Slide 14"></div>
-
-          <!-- Narasi Audio Ringkas -->
-          <div class="slide13-narasi-bar">
-            <button class="discuss-reveal-btn" id="btn-play-video-demo">
-              <span>▶</span> Dengarkan Narasi Suara
+          <!-- Hotspots Interaktif 4 Elemen Struktur Naratif -->
+          <div class="structure-hotspots-container" id="slide6-structure-hotspots">
+            <button type="button" class="structure-hotspot" data-structure="orientation" aria-label="Orientation"
+              title="Explore Orientation">
+              <span class="structure-hotspot-hint">Explore</span>
+              <span class="structure-badge-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="structure-hotspot" data-structure="complication" aria-label="Complication"
+              title="Explore Complication">
+              <span class="structure-hotspot-hint">Explore</span>
+              <span class="structure-badge-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="structure-hotspot" data-structure="resolution" aria-label="Resolution"
+              title="Explore Resolution">
+              <span class="structure-hotspot-hint">Explore</span>
+              <span class="structure-badge-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="structure-hotspot" data-structure="coda" aria-label="Coda"
+              title="Explore Coda">
+              <span class="structure-hotspot-hint">Explore</span>
+              <span class="structure-badge-check" aria-hidden="true">✓</span>
             </button>
           </div>
 
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="12" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="14" title="Lanjut"></button>
+          <!-- Indikator Status Kunci Navigasi Slide 6 -->
+          <div class="slide6-progress-badge" id="slide6-progress-badge">
+            <span class="slide6-progress-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 8V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9z" />
+              </svg></span>
+            <span class="slide6-progress-text">Explore all 4 structures to proceed (<span
+                id="slide6-count">0</span>/4)</span>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="5" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next is-locked" id="btn-slide6-next" data-goto="7"
+            title="Next Slide"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 7: Narrative Analysis - Orientation (Guiding Questions) -->
+      <article class="slide-frame" data-slide="7">
+        <img class="slide-bg-img" src="assets/slides/slide_7_to_11_background.webp"
+          alt="Slide 7 Analysis Mbah Kanjeng Sepuh: Orientation" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="6" title="Back to Slide 6"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="8" title="Next to Slide 8"></div>
+
+          <!-- Container Analisis Orientation Slide 7 -->
+          <div class="slide7-analysis-container" id="slide7-analysis-container">
+            <!-- Header Badge Orientation & Sub-poin Guiding Questions -->
+            <div class="slide7-header-wrapper">
+              <div class="slide7-orientation-badge">
+                <span class="slide7-orientation-title">ORIENTATION</span>
+              </div>
+            </div>
+
+            <!-- SVG Connector Lines dari Orientation ke 3 Kartu -->
+            <div class="slide7-connector-svg-box" aria-hidden="true">
+              <svg class="slide7-connector-svg" viewBox="0 0 900 48" preserveAspectRatio="none">
+                <defs>
+                  <marker id="s7-arrow-white" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto"
+                    markerUnits="userSpaceOnUse">
+                    <polygon points="1 2, 12 7, 1 12" fill="#ffffff" />
+                  </marker>
+                </defs>
+                <!-- Garis ke Kartu 1 (WHO) -->
+                <path d="M 450 0 C 450 24, 150 16, 150 36" fill="none" stroke="#ffffff" stroke-width="5"
+                  stroke-linecap="round" />
+                <!-- Garis ke Kartu 2 (WHEN) -->
+                <path d="M 450 0 L 450 36" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+                <!-- Garis ke Kartu 3 (WHERE) -->
+                <path d="M 450 0 C 450 24, 750 16, 750 36" fill="none" stroke="#ffffff" stroke-width="5"
+                  stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- 3 Kolom Kartu Analisis: Who, When, Where -->
+            <div class="slide7-cards-grid">
+
+              <!-- Kartu 1: WHO -->
+              <div class="slide7-card active" data-point="who" tabindex="0" role="region"
+                aria-label="Point Who: The Multifaceted Protagonist">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-who">WHO?</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="Who? The protagonist is Raden Adipati Suryodiningrat, also known as Kanjeng Sepuh."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body">
+                  <p class="slide7-card-desc">
+                    <span class="slide7-hl">Raden Adipati Suryodiningrat</span> / <span class="slide7-hl">Kanjeng
+                      Sepuh</span>, leader of Sedayu.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Kartu 2: WHEN -->
+              <div class="slide7-card" data-point="when" tabindex="0" role="region"
+                aria-label="Point When: Temporal Setting">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-when">WHEN?</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="When? Historical setting in the early nineteenth century."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body">
+                  <p class="slide7-card-desc">
+                    Historical setting in the <span class="slide7-hl">early nineteenth
+                      century</span> (Sedayu Regency era).
+                  </p>
+                </div>
+              </div>
+
+              <!-- Kartu 3: WHERE -->
+              <div class="slide7-card" data-point="where" tabindex="0" role="region"
+                aria-label="Point Where: Geographic Context">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-where">WHERE?</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="Where? Setting in the Duchy of Sedayu on the northern coast of East Java."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body">
+                  <p class="slide7-card-desc">
+                    Setting in the <span class="slide7-hl">Duchy of Sedayu</span> on the <span
+                      class="slide7-hl">northern coast of East Java</span>.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="6" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="8" title="Next"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 8: Narrative Analysis - Complication (Guiding Concept) -->
+      <article class="slide-frame" data-slide="8">
+        <img class="slide-bg-img" src="assets/slides/slide_7_to_11_background.webp"
+          alt="Slide 8 Analysis Mbah Kanjeng Sepuh: Complication" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="7" title="Back to Slide 7"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="9" title="Next to Slide 9"></div>
+
+          <!-- Container Analisis Complication Slide 8 -->
+          <div class="slide7-analysis-container slide8-analysis-container" id="slide8-analysis-container">
+            <!-- Header Badge Complication -->
+            <div class="slide7-header-wrapper">
+              <div class="slide7-orientation-badge">
+                <span class="slide7-orientation-title">Complication</span>
+              </div>
+            </div>
+
+            <!-- SVG Connector Lines (Garis connector cuma satu turun kebawah) -->
+            <div class="slide7-connector-svg-box" aria-hidden="true">
+              <svg class="slide7-connector-svg" viewBox="0 0 900 48" preserveAspectRatio="none">
+                <!-- Garis connector cuma satu turun kebawah -->
+                <path d="M 450 0 L 450 42" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- Kartu Analisis Complication Tunggal -->
+            <div class="slide8-cards-single">
+              <div class="slide7-card slide8-card active" tabindex="0" role="region"
+                aria-label="Point Complication: What went wrong">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-complication">What went wrong?</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="What went wrong? Introduces external or internal disruption—such as tyranny, drought, war, or moral tests—that upsets the peace."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body">
+                  <p class="slide7-card-desc">
+                    Introduces <span class="slide7-hl">external or internal disruption</span>—such as <span
+                      class="slide7-hl">tyranny, drought, war, or moral tests</span>—that upsets the peace.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="7" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="9" title="Next"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 9: Narrative Analysis - Resolution (Guiding Concept) -->
+      <article class="slide-frame" data-slide="9">
+        <img class="slide-bg-img" src="assets/slides/slide_7_to_11_background.webp"
+          alt="Slide 9 Analysis Mbah Kanjeng Sepuh: Resolution" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="8" title="Back to Slide 8"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="10" title="Next to Slide 10"></div>
+
+          <!-- Container Analisis Resolution Slide 9 -->
+          <div class="slide7-analysis-container slide8-analysis-container" id="slide9-analysis-container">
+            <!-- Header Badge Resolution -->
+            <div class="slide7-header-wrapper">
+              <div class="slide7-orientation-badge">
+                <span class="slide7-orientation-title">Resolution</span>
+              </div>
+            </div>
+
+            <!-- SVG Connector Lines (Garis connector cuma satu turun kebawah) -->
+            <div class="slide7-connector-svg-box" aria-hidden="true">
+              <svg class="slide7-connector-svg" viewBox="0 0 900 48" preserveAspectRatio="none">
+                <!-- Garis connector cuma satu turun kebawah -->
+                <path d="M 450 0 L 450 42" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- Kartu Analisis Resolution Tunggal -->
+            <div class="slide8-cards-single">
+              <div class="slide7-card slide8-card active" tabindex="0" role="region"
+                aria-label="Point Resolution: How was it fixed?">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-complication">How was it fixed?</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="How was it fixed? Details deliberate actions, moral courage, strategy, or deeds through which the crisis is solved."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body">
+                  <p class="slide7-card-desc">
+                    Details <span class="slide7-hl">deliberate actions, moral courage, strategy, or deeds</span> through
+                    which the <span class="slide7-hl">crisis is solved</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="8" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="10" title="Next"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 10: Narrative Analysis - Coda (Guiding Concept) -->
+      <article class="slide-frame" data-slide="10">
+        <img class="slide-bg-img" src="assets/slides/slide_7_to_11_background.webp"
+          alt="Slide 10 Analysis Mbah Kanjeng Sepuh: Coda" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="9" title="Back to Slide 9"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="11" title="Next to Slide 11"></div>
+
+          <!-- Container Analisis Coda Slide 10 -->
+          <div class="slide7-analysis-container slide8-analysis-container" id="slide10-analysis-container">
+            <!-- Header Badge Coda -->
+            <div class="slide7-header-wrapper">
+              <div class="slide7-orientation-badge">
+                <span class="slide7-orientation-title">Coda</span>
+              </div>
+            </div>
+
+            <!-- SVG Connector Lines (Garis connector cuma satu turun kebawah) -->
+            <div class="slide7-connector-svg-box" aria-hidden="true">
+              <svg class="slide7-connector-svg" viewBox="0 0 900 48" preserveAspectRatio="none">
+                <!-- Garis connector cuma satu turun kebawah -->
+                <path d="M 450 0 L 450 42" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- Kartu Analisis Coda Tunggal -->
+            <div class="slide8-cards-single">
+              <div class="slide7-card slide8-card active" tabindex="0" role="region"
+                aria-label="Point Coda: What is the takeaway?">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-complication">What is the takeaway?</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="What is the takeaway? An evaluative closing stating the moral lesson, legacy, or enduring physical relics."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body">
+                  <p class="slide7-card-desc">
+                    An evaluative closing stating the <span class="slide7-hl">moral lesson, legacy</span>, or <span
+                      class="slide7-hl">enduring physical relics</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="9" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="11" title="Next"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 11: Language Features -->
+      <article class="slide-frame" data-slide="11">
+        <img class="slide-bg-img" src="assets/slides/slide_11_background.webp" alt="Slide 11 Language Features"
+          loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="10" title="Back to Slide 10"></div>
+          <div class="slide-half-nav slide-half-next is-locked" id="slide11-half-next" data-goto="12"
+            title="Next to Slide 12"></div>
+
+          <!-- Container Analisis Language Features Slide 11 -->
+          <div class="slide11-analysis-container" id="slide11-analysis-container">
+            <!-- Header Badge & Description di Bagian Tengah -->
+            <div class="slide11-header-wrapper">
+              <div class="slide11-title-badge">
+                <span class="slide11-main-title">Language Features</span>
+              </div>
+              <p class="slide11-main-desc">Key linguistic devices in narrative texts:</p>
+            </div>
+
+            <!-- SVG Connector Lines dari bagian tengah ke 5 kartu -->
+            <div class="slide11-connector-svg-box" aria-hidden="true">
+              <svg class="slide11-connector-svg" viewBox="0 0 1000 48" preserveAspectRatio="none">
+                <!-- 5 Cabang melengkung ala Slide 7 menuju masing-masing kartu -->
+                <path d="M 500 0 C 500 24, 100 16, 100 42" fill="none" stroke="#ffffff" stroke-width="5"
+                  stroke-linecap="round" />
+                <path d="M 500 0 C 500 24, 300 16, 300 42" fill="none" stroke="#ffffff" stroke-width="5"
+                  stroke-linecap="round" />
+                <path d="M 500 0 L 500 42" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+                <path d="M 500 0 C 500 24, 700 16, 700 42" fill="none" stroke="#ffffff" stroke-width="5"
+                  stroke-linecap="round" />
+                <path d="M 500 0 C 500 24, 900 16, 900 42" fill="none" stroke="#ffffff" stroke-width="5"
+                  stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- 5 Poin Kartu Language Features (dengan judul saja) -->
+            <div class="slide11-cards-grid" id="slide11-cards-container">
+              <!-- Kartu 1: Narrative Past tense -->
+              <button type="button" class="slide11-card" data-feature="past_tense" aria-label="Narrative Past tense"
+                title="Narrative Past tense">
+                <div class="slide11-card-header">
+                  <div class="slide11-badge-group">
+                    <span class="slide11-badge">POINT 1</span>
+                  </div>
+                  <div class="slide11-card-badge-status" aria-hidden="true">
+                    <span class="slide11-status-icon">✓</span>
+                  </div>
+                </div>
+                <div class="slide11-card-body">
+                  <span class="slide11-card-title">Narrative Past tense</span>
+                </div>
+              </button>
+
+              <!-- Kartu 2: Action Verbs -->
+              <button type="button" class="slide11-card" data-feature="action_verbs" aria-label="Action Verbs"
+                title="Action Verbs">
+                <div class="slide11-card-header">
+                  <div class="slide11-badge-group">
+                    <span class="slide11-badge">POINT 2</span>
+                  </div>
+                  <div class="slide11-card-badge-status" aria-hidden="true">
+                    <span class="slide11-status-icon">✓</span>
+                  </div>
+                </div>
+                <div class="slide11-card-body">
+                  <span class="slide11-card-title">Action Verbs</span>
+                </div>
+              </button>
+
+              <!-- Kartu 3: Temporal Connectives and Adverbial Transitions -->
+              <button type="button" class="slide11-card" data-feature="temporal_connectives"
+                aria-label="Temporal Connectives and Adverbial Transitions"
+                title="Temporal Connectives and Adverbial Transitions">
+                <div class="slide11-card-header">
+                  <div class="slide11-badge-group">
+                    <span class="slide11-badge">POINT 3</span>
+                  </div>
+                  <div class="slide11-card-badge-status" aria-hidden="true">
+                    <span class="slide11-status-icon">✓</span>
+                  </div>
+                </div>
+                <div class="slide11-card-body">
+                  <span class="slide11-card-title">Temporal Connectives &amp; Adverbial Transitions</span>
+                </div>
+              </button>
+
+              <!-- Kartu 4: Direct and Reported -->
+              <button type="button" class="slide11-card" data-feature="direct_reported" aria-label="Direct and Reported"
+                title="Direct and Reported">
+                <div class="slide11-card-header">
+                  <div class="slide11-badge-group">
+                    <span class="slide11-badge">POINT 4</span>
+                  </div>
+                  <div class="slide11-card-badge-status" aria-hidden="true">
+                    <span class="slide11-status-icon">✓</span>
+                  </div>
+                </div>
+                <div class="slide11-card-body">
+                  <span class="slide11-card-title">Direct and Reported</span>
+                </div>
+              </button>
+
+              <!-- Kartu 5: Descriptive Adjectives -->
+              <button type="button" class="slide11-card" data-feature="descriptive_adjectives"
+                aria-label="Descriptive Adjectives" title="Descriptive Adjectives">
+                <div class="slide11-card-header">
+                  <div class="slide11-badge-group">
+                    <span class="slide11-badge">POINT 5</span>
+                  </div>
+                  <div class="slide11-card-badge-status" aria-hidden="true">
+                    <span class="slide11-status-icon">✓</span>
+                  </div>
+                </div>
+                <div class="slide11-card-body">
+                  <span class="slide11-card-title">Descriptive Adjectives</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Indikator Status Kunci Navigasi Slide 11 -->
+            <div class="slide11-progress-badge" id="slide11-progress-badge">
+              <span class="slide11-progress-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path
+                    d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 8V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9z" />
+                </svg>
+              </span>
+              <span class="slide11-progress-text">Explore all 5 Language Features to proceed (<span
+                  id="slide11-count">0</span>/5)</span>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="10" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next is-locked" id="btn-slide11-next" data-goto="12"
+            title="Next to Slide 12"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 12: Narrative Video - Sang Rojo Pandito (The Legend of Mbah Kanjeng Sepuh) -->
+      <article class="slide-frame" data-slide="12">
+        <img class="slide-bg-img" src="assets/slides/slide_7_to_11_background.webp"
+          alt="Slide 12 Video The Legend of Mbah Kanjeng Sepuh" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="11" title="Back to Slide 11"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="13" title="Next to Slide 13"></div>
+
+          <!-- Container Analisis Slide 12: Video Legend Story -->
+          <div class="slide7-analysis-container slide8-analysis-container slide12-analysis-container"
+            id="slide12-analysis-container">
+            <!-- Header Badge Slide 12 -->
+            <div class="slide7-header-wrapper">
+              <div class="slide7-orientation-badge slide12-orientation-badge">
+                <span class="slide7-orientation-title">The Legend Story</span>
+              </div>
+            </div>
+
+            <!-- SVG Connector Lines (Garis connector cuma satu turun kebawah) -->
+            <div class="slide7-connector-svg-box" aria-hidden="true">
+              <svg class="slide7-connector-svg" viewBox="0 0 900 48" preserveAspectRatio="none">
+                <!-- Garis connector cuma satu turun kebawah -->
+                <path d="M 450 0 L 450 42" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- Kartu Analisis Slide 12 Tunggal -->
+            <div class="slide8-cards-single slide12-cards-single">
+              <div class="slide7-card slide8-card slide12-card active" tabindex="0" role="region"
+                aria-label="Story of Sang Rojo Pandito (Mbah Kanjeng Sepuh)">
+                <div class="slide7-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide7-badge badge-slide12">Orientation Phase</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn"
+                    data-audio-text="How did the legend story of Sang Rojo Pandito, Mbah Kanjeng Sepuh, begin?"
+                    title="Listen to Question" aria-label="Listen to Question">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body slide12-card-body">
+                  <p class="slide7-card-desc slide12-card-desc">
+                    How did the legend story of <span class="slide7-hl">Sang Rojo Pandito</span> (<span
+                      class="slide7-hl">Mbah Kanjeng Sepuh</span>) begin?
+                  </p>
+                  <div class="slide12-action-wrapper">
+                    <button type="button" class="slide12-launch-video-btn" id="btn-launch-video-slide12"
+                      title="Play Video">
+                      <svg class="slide12-play-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"
+                        aria-hidden="true">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                      <span class="slide12-btn-text">Watch Video</span>
+                    </button>
+                    <div class="slide12-watched-pill" id="slide12-watched-pill" style="display: none;">
+                      <span class="watched-check">✓</span>
+                      <span>Watched</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Player Modal Overlay untuk Slide 12 -->
+          <div class="slide12-video-modal" id="slide12-video-modal" role="dialog" aria-modal="true"
+            aria-labelledby="slide12-modal-title" style="display: none;">
+            <div class="slide12-modal-backdrop" id="slide12-modal-backdrop"></div>
+            <div class="slide12-modal-card">
+              <div class="slide12-modal-header">
+                <div class="slide12-modal-title-wrap">
+                  <span class="slide12-modal-badge">Video Story</span>
+                  <h3 class="slide12-modal-title" id="slide12-modal-title">The Legend of Sang Rojo Pandito</h3>
+                </div>
+                <div class="slide12-header-right">
+                  <div class="slide12-watch-status" id="slide12-watch-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text" id="slide12-status-text">Watch full video to unlock close</span>
+                  </div>
+                  <button type="button" class="slide12-close-btn" id="btn-close-video-slide12" disabled
+                    aria-disabled="true" title="Watch video until finished to close" aria-label="Close Video">
+                    <span class="close-icon" id="slide12-close-icon"><svg viewBox="0 0 24 24" width="16" height="16"
+                        fill="currentColor">
+                        <path
+                          d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 8V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9z" />
+                      </svg></span>
+                    <span class="close-label" id="slide12-close-label">Close</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="slide12-video-wrapper">
+                <div id="youtube-player-slide12" class="slide12-video-element"></div>
+              </div>
+
+              <div class="slide12-modal-footer">
+                <div class="slide12-instruction-note" id="slide12-instruction-note">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span id="slide12-footer-hint">Close button activates automatically after video completion.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="11" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="13" title="Next"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 13: The Complication Analysis -->
+      <article class="slide-frame" data-slide="13">
+        <img class="slide-bg-img" src="assets/slides/slide_13_background.webp" alt="Slide 13 Complication Analysis"
+          loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="12" title="Back to Slide 12"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="14" title="Next to Slide 14"></div>
+
+          <!-- Container Analisis Complication Slide 13 -->
+          <div class="slide13-analysis-container" id="slide13-analysis-container">
+            <!-- SVG Connector Lines ke 2 Kartu -->
+            <div class="slide13-connector-box" aria-hidden="true">
+              <svg class="slide13-connector-svg" viewBox="0 0 900 64" preserveAspectRatio="none">
+                <defs>
+                  <marker id="s13-arrow" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto"
+                    markerUnits="userSpaceOnUse">
+                    <polygon points="1 2, 12 7, 1 12" fill="#f472b6" />
+                  </marker>
+                </defs>
+                <!-- Panah Kiri mengarah ke Kartu External Conflict -->
+                <path d="M 400 4 C 360 40, 260 16, 230 52" fill="none" stroke="#f472b6" stroke-width="4.5"
+                  stroke-linecap="round" marker-end="url(#s13-arrow)" />
+                <!-- Panah Kanan mengarah ke Kartu Environmental Conflict -->
+                <path d="M 500 4 C 540 40, 640 16, 670 52" fill="none" stroke="#f472b6" stroke-width="4.5"
+                  stroke-linecap="round" marker-end="url(#s13-arrow)" />
+              </svg>
+            </div>
+
+            <!-- 2 Kartu Grid Analisis Complication -->
+            <div class="slide13-cards-grid">
+              <!-- Kartu 1: External Socio-Political Conflict -->
+              <div class="slide7-card slide13-card active" data-point="socio-political" tabindex="0" role="region"
+                aria-label="External Socio-Political Conflict">
+                <div class="slide7-card-header slide13-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide13-badge">External Socio-Political Conflict</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn slide13-audio-btn"
+                    data-audio-text="External Socio-Political Conflict: Coercive taxation and monopolistic pressure imposed by Dutch colonial authorities on indigenous merchants."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body slide13-card-body">
+                  <p class="slide13-card-desc">
+                    <span class="slide13-hl">Coercive taxation</span> and <span class="slide13-hl">monopolistic
+                      pressure</span>
+                    imposed by Dutch colonial authorities on <span class="slide13-hl">indigenous merchants</span>.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Kartu 2: Environmental & Humanitarian Conflict -->
+              <div class="slide7-card slide13-card" data-point="environmental" tabindex="0" role="region"
+                aria-label="Environmental & Humanitarian Conflict">
+                <div class="slide7-card-header slide13-card-header">
+                  <div class="slide7-badge-group">
+                    <span class="slide13-badge">Environmental &amp; Humanitarian Conflict</span>
+                  </div>
+                  <button type="button" class="slide7-audio-btn slide13-audio-btn"
+                    data-audio-text="Environmental and Humanitarian Conflict: A severe regional drought triggering violent agricultural disputes over scarce irrigation across the Tuban Lamongan border."
+                    title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="slide7-card-body slide13-card-body">
+                  <p class="slide13-card-desc">
+                    A <span class="slide13-hl">severe regional drought</span> triggering violent agricultural disputes
+                    over <span class="slide13-hl">scarce irrigation</span> across the <span
+                      class="slide13-hl">Tuban–Lamongan border</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="12" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="14" title="Next"></button>
         </div>
       </article>
 
       <!-- SLIDE 14: Edukasi Erupsi Gunung Berapi -->
       <article class="slide-frame" data-slide="14">
-        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 Edukasi Gunung Berapi" loading="lazy" decoding="async">
+        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 Volcanic Education" loading="lazy"
+          decoding="async">
         <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="13" title="Kembali ke Slide 13"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="15" title="Lanjut ke Slide 15"></div>
+          <!-- Navigation Half Areas -->
+          <div class="slide-half-nav slide-half-prev" data-goto="13" title="Back to Slide 13"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="15" title="Go to Slide 15"></div>
 
-          <!-- Educational Whiteboard Content (Pengganti AR) -->
+          <!-- Educational Whiteboard Content -->
           <div class="slide14-edu-board">
             <div class="edu-board-header">
-              <span class="edu-board-tag">Materi Pengayaan</span>
-              <h3 class="edu-board-title">Karakteristik & Manfaat Vulkanik</h3>
+              <span class="edu-board-tag">Enrichment Material</span>
+              <h3 class="edu-board-title">Characteristics &amp; Volcanic Benefits</h3>
             </div>
             <div class="edu-board-grid">
               <div class="edu-point-item">
                 <div class="edu-point-num">1</div>
                 <div class="edu-point-body">
-                  <strong>Magma & Lava:</strong> Magma tersimpan panas di dalam kerak bumi; setelah keluar ke permukaan lereng gunung disebut <em>Lava</em>.
+                  <strong>Magma &amp; Lava:</strong> Magma is stored hot within the Earth's crust; once it reaches the
+                  surface of mountain slopes, it is called <em>Lava</em>.
                 </div>
               </div>
               <div class="edu-point-item">
                 <div class="edu-point-num">2</div>
                 <div class="edu-point-body">
-                  <strong>Tanah Subur:</strong> Endapan abu vulkanik kaya unsur hara mineral penting yang menyuburkan lahan pertanian rakyat.
+                  <strong>Fertile Soil:</strong> Volcanic ash deposits are rich in essential mineral nutrients that
+                  fertilize agricultural lands.
                 </div>
               </div>
               <div class="edu-point-item">
                 <div class="edu-point-num">3</div>
                 <div class="edu-point-body">
-                  <strong>Energi Geotermal:</strong> Uap panas bumi dari sistem vulkanik dimanfaatkan sebagai pembangkit energi ramah lingkungan.
+                  <strong>Geothermal Energy:</strong> Geothermal steam from volcanic systems is harnessed for
+                  eco-friendly power generation.
                 </div>
               </div>
               <div class="edu-point-item">
                 <div class="edu-point-num">4</div>
                 <div class="edu-point-body">
-                  <strong>Mitigasi Bencana:</strong> Memahami arah luncuran awan panas dan mematuhi peta jalur evakuasi saat status siaga erupsi.
+                  <strong>Disaster Mitigation:</strong> Understanding pyroclastic flow directions and following
+                  evacuation route maps during eruption alert statuses.
                 </div>
               </div>
             </div>
           </div>
 
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="13" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="15" title="Lanjut ke Kuis"></button>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="13" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="15" title="Go to Quiz"></button>
         </div>
       </article>
 
-      <!-- SLIDE 15: Quiz Time -->
+      <!-- SLIDE 15: Post Test & Evaluasi Akhir -->
       <article class="slide-frame" data-slide="15">
-        <img class="slide-bg-img" src="assets/slides/slide_15.webp" alt="Slide 15 Quiz Time" loading="lazy"
+        <img class="slide-bg-img" src="assets/slides/slide_15_background.webp" alt="Slide 15 Post-test" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
-          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
-          <div class="slide-half-nav slide-half-prev" data-goto="14" title="Kembali ke Slide 14"></div>
-          <div class="slide-half-nav slide-half-next" data-goto="16" title="Lanjut ke Slide 16"></div>
-
-          <!-- Hotspot over "MULAI PETUALANGAN ->" button in slide 15 -->
-          <button class="quiz-launch-hotspot" id="btn-launch-quiz-modal" title="Mulai Kuis Evaluasi (Post-test 15 Soal)"></button>
-          <button type="button" class="btn-slide15-leaderboard" id="btn-slide15-leaderboard" title="Lihat Papan Peringkat">
-            Papan Peringkat (Leaderboard)
-          </button>
-
-          <!-- Interactive Post-test Viewport Modal (Fase 5) -->
-          <div class="quiz-active-modal" id="quiz-modal-box" aria-modal="true" role="dialog" aria-labelledby="posttest-heading">
+          <!-- Interactive Post-test Board Container -->
+          <div class="slide15-board-container quiz-active-modal" id="quiz-modal-box" role="region"
+            aria-label="Post-test Final Evaluation"
+            style="position:absolute!important;top:26.11%!important;left:17.03%!important;width:63.17%!important;height:68.15%!important;transform:none!important;max-height:none!important;">
             <div class="posttest-modal-card">
-              <!-- Active Quiz View -->
-              <div class="posttest-quiz-view" id="posttest-quiz-view">
+              <!-- 1. Start / Welcome View on Slide 15 Board -->
+              <div class="posttest-start-view" id="posttest-start-view">
+                <div class="posttest-start-header">
+                  <span class="posttest-badge">Final Learning Evaluation</span>
+                  <h2 class="posttest-start-title">Narrative &amp; Comprehension Evaluation</h2>
+                  <p class="posttest-start-desc">
+                    15 questions covering narrative structure, language features, and reading comprehension.
+                  </p>
+                </div>
+
+                <div class="posttest-start-grid">
+                  <div class="posttest-feat-card">
+                    <span class="feat-badge">PART 1</span>
+                    <strong class="feat-title">10 Multiple Choice</strong>
+                    <span class="feat-desc">Narrative comprehension, historical setting, and past tense rules.</span>
+                  </div>
+                  <div class="posttest-feat-card">
+                    <span class="feat-badge">PART 2</span>
+                    <strong class="feat-title">5 Verb Pairs</strong>
+                    <span class="feat-desc">Match base verbs (V1) with irregular past tense forms (V2).</span>
+                  </div>
+                  <div class="posttest-feat-card">
+                    <span class="feat-badge">RESULTS</span>
+                    <strong class="feat-title">N-Gain &amp; Ranking</strong>
+                    <span class="feat-desc">Diagnostic learning progress evaluation and ranking.</span>
+                  </div>
+                </div>
+
+                <!-- Student Identity Info & Previous Score -->
+                <div class="posttest-start-student-strip">
+                  <div class="start-student-meta">
+                    <span class="start-student-label">Participant:</span>
+                    <strong class="start-student-val" id="posttest-start-student-name">Student</strong>
+                    <span class="start-student-class" id="posttest-start-student-class">Class -</span>
+                    <span class="start-student-nisn" id="posttest-start-student-nisn">NISN: -</span>
+                  </div>
+                  <div class="posttest-prev-score-pill" id="posttest-prev-score-pill" style="display: none;">
+                    Last Score: <strong id="posttest-prev-score-val">0</strong>/100
+                  </div>
+                </div>
+
+                <!-- Action Buttons: Start / Leaderboard -->
+                <div class="posttest-start-actions">
+                  <button type="button" class="posttest-btn-start" id="btn-launch-quiz-modal"
+                    title="Start Evaluation Quiz (10 MCQ + 5 Matching)">
+                    Start Post-test ➔
+                  </button>
+                  <button type="button" class="posttest-btn-start-leaderboard" id="btn-slide15-leaderboard"
+                    title="View Leaderboard">
+                    Leaderboard
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2. Active Quiz View -->
+              <div class="posttest-quiz-view" id="posttest-quiz-view" style="display: none;">
                 <!-- Header -->
                 <div class="posttest-header">
                   <div class="posttest-meta-info">
-                    <span class="posttest-badge">Evaluasi Akhir</span>
-                    <span class="posttest-type-badge" id="posttest-type-badge">Pilihan Ganda</span>
-                    <span class="posttest-counter" id="posttest-counter">Soal 1 dari 15</span>
+                    <span class="posttest-badge">Post-test</span>
+                    <span class="posttest-type-badge" id="posttest-type-badge">Multiple Choice</span>
+                    <span class="posttest-counter" id="posttest-counter">Question 1 of 15</span>
                   </div>
                   <div class="posttest-student-tag" id="posttest-student-tag">-</div>
-                  <button type="button" class="posttest-close-btn" id="btn-close-quiz" title="Tutup Kuis">✕</button>
+                  <button type="button" class="posttest-close-btn" id="btn-close-quiz"
+                    title="Back to Quiz Menu">✕</button>
                 </div>
 
                 <!-- Progress Bar Track -->
@@ -509,7 +1281,7 @@
                 <div class="posttest-body" id="posttest-body">
                   <div class="posttest-question-box">
                     <p class="posttest-question-text" id="posttest-question-text">
-                      Memuat pertanyaan post-test...
+                      Loading post-test question...
                     </p>
                   </div>
 
@@ -523,70 +1295,75 @@
                   <!-- Container Soal Mencocokkan (Matching: Soal 11-15) -->
                   <div class="posttest-matching-container" id="posttest-matching-container" style="display: none;">
                     <div class="matching-instruction-bar" id="posttest-matching-hint">
-                      Ketuk satu kartu di kolom kiri, lalu ketuk pasangannya di kolom kanan.
+                      Tap a card in the left column, then tap its matching pair in the right column.
                     </div>
                     <div class="matching-grid-wrapper">
                       <!-- Kolom Kiri: Premis / Konsep Tetap -->
                       <div class="matching-column" id="matching-col-left">
-                        <div class="matching-col-title">Premis / Konsep</div>
+                        <div class="matching-col-title">Base Verb (V1)</div>
                         <div class="matching-items-list" id="matching-items-left">
                           <!-- Kartu kiri diisi dinamis -->
                         </div>
                       </div>
                       <!-- Kolom Kanan: Target Pasangan Diacak -->
                       <div class="matching-column" id="matching-col-right">
-                        <div class="matching-col-title">Pasangan Target</div>
+                        <div class="matching-col-title">Matching Target (V2)</div>
                         <div class="matching-items-list" id="matching-items-right">
                           <!-- Kartu kanan diisi dinamis -->
                         </div>
                       </div>
                     </div>
                     <div class="matching-actions-bar">
-                      <div class="matching-status-pill" id="matching-status-text">Terpasang: 0 / 4 Pasangan</div>
+                      <div class="matching-status-pill" id="matching-status-text">Matched: 0 / 4 Pairs</div>
                       <div class="matching-btn-group">
-                        <button type="button" class="matching-btn-reset" id="btn-reset-matching">Reset Pasangan</button>
-                        <button type="button" class="matching-btn-verify" id="btn-verify-matching" disabled>Periksa Pasangan</button>
+                        <button type="button" class="matching-btn-reset" id="btn-reset-matching">Reset Pairs</button>
+                        <button type="button" class="matching-btn-verify" id="btn-verify-matching" disabled>Confirm
+                          Pairs</button>
                       </div>
                     </div>
                   </div>
 
                   <!-- Kotak Penjelasan / Pembahasan Edukatif -->
                   <div class="posttest-explanation-box" id="posttest-explanation-box" style="display: none;">
-                    <!-- Pembahasan materi akan muncul di sini -->
+                    <!-- Explanation content appears here -->
                   </div>
                 </div>
 
                 <!-- Footer Navigation -->
                 <div class="posttest-footer" id="posttest-footer">
-                  <div class="posttest-hint" id="posttest-hint">Pilih salah satu jawaban untuk melanjutkan.</div>
+                  <div class="posttest-hint" id="posttest-hint">Select an answer to proceed.</div>
                   <button type="button" class="posttest-next-btn" id="btn-next-question" disabled>
-                    Soal Selanjutnya ➔
+                    Next Question ➔
                   </button>
                 </div>
               </div>
 
-              <!-- Result Completion & Leaderboard View (Fase 6) -->
+              <!-- 3. Result Completion & Leaderboard View -->
               <div class="posttest-result-view" id="posttest-result-screen" style="display: none;">
-                <span class="posttest-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
-                  Evaluasi Akhir Selesai
+                <span class="posttest-badge"
+                  style="background: rgba(16, 185, 129, 0.15); color: #059669; border-color: rgba(16, 185, 129, 0.3);">
+                  Final Evaluation Complete
                 </span>
-                <h2 class="posttest-result-title" id="posttest-heading">Hasil Evaluasi & Papan Peringkat</h2>
+                <h2 class="posttest-result-title" id="posttest-heading">Evaluation Results &amp; Leaderboard</h2>
                 <p class="posttest-result-desc">
-                  Selamat! Anda telah menyelesaikan seluruh rangkaian evaluasi materi Mbah Kanjeng Sepuh & Vulkanologi.
+                  Evaluation completed. Review score summary, learning gain analysis, and rankings below.
                 </p>
 
                 <!-- Identitas Siswa -->
                 <div class="posttest-student-summary" id="posttest-student-summary">
-                  <span id="posttest-summary-name">-</span> • Kelas <span id="posttest-summary-class">-</span> (NISN: <span id="posttest-summary-nisn">-</span>)
+                  <span id="posttest-summary-name">-</span> • Class <span id="posttest-summary-class">-</span> (NISN:
+                  <span id="posttest-summary-nisn">-</span>)
                 </div>
 
-                <!-- Navigation Tabs (Fase 6) -->
+                <!-- Navigation Tabs -->
                 <div class="posttest-nav-tabs" role="tablist">
-                  <button type="button" class="posttest-tab-btn active" id="tab-btn-summary" role="tab" aria-selected="true" aria-controls="tab-pane-summary">
-                    Ringkasan Nilai & N-Gain
+                  <button type="button" class="posttest-tab-btn active" id="tab-btn-summary" role="tab"
+                    aria-selected="true" aria-controls="tab-pane-summary">
+                    Score Summary &amp; N-Gain
                   </button>
-                  <button type="button" class="posttest-tab-btn" id="tab-btn-leaderboard" role="tab" aria-selected="false" aria-controls="tab-pane-leaderboard">
-                    Papan Peringkat (Leaderboard)
+                  <button type="button" class="posttest-tab-btn" id="tab-btn-leaderboard" role="tab"
+                    aria-selected="false" aria-controls="tab-pane-leaderboard">
+                    Leaderboard
                   </button>
                 </div>
 
@@ -594,57 +1371,59 @@
                 <div class="posttest-tab-pane active" id="tab-pane-summary" role="tabpanel">
                   <!-- Skor Akhir -->
                   <div class="posttest-score-box">
-                    <span class="posttest-score-label">Skor Akhir Post-test</span>
+                    <span class="posttest-score-label">Final Post-test Score</span>
                     <div class="posttest-score-num" id="posttest-final-score">0 / 100</div>
                     <div class="posttest-score-breakdown" id="posttest-score-breakdown">
-                      Pilihan Ganda: 0 / 10 • Mencocokkan: 0 / 5
+                      Multiple Choice: 0 / 10 • Matching: 0 / 5
                     </div>
                   </div>
 
                   <!-- Komparasi Pretest vs Posttest vs N-Gain -->
                   <div class="posttest-comparison-grid">
                     <div class="comparison-card">
-                      <span class="comp-label">Nilai Pretest</span>
+                      <span class="comp-label">Pretest Score</span>
                       <span class="comp-val" id="posttest-comp-pretest">-</span>
                     </div>
                     <div class="comparison-card">
-                      <span class="comp-label">Nilai Post-test</span>
+                      <span class="comp-label">Post-test Score</span>
                       <span class="comp-val" id="posttest-comp-posttest">-</span>
                     </div>
                     <div class="comparison-card highlight">
-                      <span class="comp-label">Peningkatan (+Δ)</span>
+                      <span class="comp-label">Improvement (+Δ)</span>
                       <span class="comp-val" id="posttest-comp-gain">+0</span>
                     </div>
                     <div class="comparison-card ngain-card">
                       <span class="comp-label">N-Gain Score</span>
                       <span class="comp-val" id="posttest-comp-ngain">0.00</span>
-                      <span class="comp-sub" id="posttest-comp-ngain-badge">Rendah</span>
+                      <span class="comp-sub" id="posttest-comp-ngain-badge">Low</span>
                     </div>
                   </div>
 
                   <!-- Analisis N-Gain Hake -->
                   <div class="ngain-analysis-card">
                     <div class="ngain-header">
-                      <div class="ngain-title">Analisis Efektivitas Pembelajaran (Hake's N-Gain)</div>
-                      <span class="ngain-category-pill" id="ngain-category-pill">Sedang</span>
+                      <div class="ngain-title">Learning Effectiveness Analysis (Hake's N-Gain)</div>
+                      <span class="ngain-category-pill" id="ngain-category-pill">Medium</span>
                     </div>
                     <p class="ngain-desc" id="ngain-desc-text">
-                      Peningkatan pemahaman materi tergolong efektif berdasarkan perbandingan skor pretest dan post-test.
+                      Material comprehension improvement is categorized as effective based on the comparison of pretest
+                      and
+                      post-test scores.
                     </p>
                     <div class="ngain-progress-wrap">
                       <div class="ngain-progress-bar">
                         <div class="ngain-progress-fill" id="ngain-progress-fill" style="width: 0%;"></div>
                       </div>
                       <div class="ngain-progress-labels">
-                        <span>&lt; 0.30 (Rendah)</span>
-                        <span>0.30 - 0.70 (Sedang)</span>
-                        <span>&ge; 0.70 (Tinggi)</span>
+                        <span>&lt; 0.30 (Low)</span>
+                        <span>0.30 - 0.70 (Medium)</span>
+                        <span>&ge; 0.70 (High)</span>
                       </div>
                     </div>
                   </div>
 
                   <button type="button" class="posttest-btn-view-leaderboard" id="btn-view-leaderboard-tab">
-                    Lihat Posisi di Papan Peringkat ➔
+                    View Leaderboard Ranking ➔
                   </button>
                 </div>
 
@@ -652,11 +1431,11 @@
                 <div class="posttest-tab-pane" id="tab-pane-leaderboard" role="tabpanel" style="display: none;">
                   <div class="leaderboard-meta-strip">
                     <div class="leaderboard-rank-status" id="leaderboard-my-status">
-                      Posisi Anda: <strong id="my-rank-text">Peringkat -</strong>
+                      Your Position: <strong id="my-rank-text">Rank -</strong>
                     </div>
                     <div class="leaderboard-stats-pills">
-                      <span class="meta-pill" id="leaderboard-avg-pill">Rata-rata: -</span>
-                      <span class="meta-pill" id="leaderboard-top-pill">Tertinggi: -</span>
+                      <span class="meta-pill" id="leaderboard-avg-pill">Average: -</span>
+                      <span class="meta-pill" id="leaderboard-top-pill">Highest: -</span>
                     </div>
                   </div>
 
@@ -664,11 +1443,11 @@
                     <table class="leaderboard-table">
                       <thead>
                         <tr>
-                          <th class="col-rank">Peringkat</th>
-                          <th class="col-name">Nama Siswa</th>
+                          <th class="col-rank">Rank</th>
+                          <th class="col-name">Student Name</th>
                           <th class="col-pre">Pretest</th>
                           <th class="col-post">Post-test</th>
-                          <th class="col-gain">Peningkatan (+Δ)</th>
+                          <th class="col-gain">Gain (+Δ)</th>
                           <th class="col-ngain">N-Gain</th>
                         </tr>
                       </thead>
@@ -681,36 +1460,40 @@
 
                 <!-- Tombol Aksi Akhir -->
                 <div class="posttest-action-buttons">
+                  <button type="button" class="posttest-btn-menu-back" id="btn-back-to-start">
+                    Post-test Menu
+                  </button>
                   <button type="button" class="posttest-btn-retry" id="btn-retry-quiz">
-                    Kerjakan Ulang Post-test
+                    Retake Post-test
                   </button>
                   <button type="button" class="posttest-btn-finish" id="btn-finish-quiz-goto16">
-                    Selesai & Ke Halaman Penutup ➔
+                    Proceed to Closing ➔
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="14" title="Kembali"></button>
-          <button class="nav-corner-btn btn-nav-next" data-goto="16" title="Lanjut"></button>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="14" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next is-locked" id="btn-slide15-next" data-goto="16"
+            title="Locked - Complete Post-test to proceed"></button>
         </div>
       </article>
 
       <!-- SLIDE 16: Closing / Terima Kasih -->
       <article class="slide-frame" data-slide="16">
-        <img class="slide-bg-img" src="assets/slides/slide_16.webp" alt="Slide 16 Penutup" loading="lazy"
+        <img class="slide-bg-img" src="assets/slides/slide_16.webp" alt="Slide 16 Closing" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
-          <button class="btn-exit-slide" id="btn-restart-app" data-goto="1" title="Exit"></button>
-          <button type="button" class="btn-slide16-leaderboard" id="btn-slide16-leaderboard" title="Lihat Papan Peringkat">
-            Lihat Papan Peringkat
+          <button class="btn-exit-slide" id="btn-restart-app" title="Exit"></button>
+          <button type="button" class="btn-slide16-leaderboard" id="btn-slide16-leaderboard" title="View Leaderboard">
+            View Leaderboard
           </button>
-          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Menu Utama"></button>
-          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Daftar Isi"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="15" title="Kembali"></button>
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="15" title="Back"></button>
         </div>
       </article>
 
@@ -721,12 +1504,12 @@
       <div class="nav-drawer-content">
         <div class="drawer-header">
           <div>
-            <div class="drawer-title">📑 Daftar Isi Media</div>
-            <div class="drawer-progress-status" id="drawer-progress-text">Progres: 1 / 14 Slide</div>
+            <div class="drawer-title">Table of Contents</div>
+            <div class="drawer-progress-status" id="drawer-progress-text">Progress: 1 / 14 Slides</div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button type="button" class="drawer-btn-leaderboard" id="btn-drawer-leaderboard" title="Buka Papan Peringkat">
-              Papan Peringkat
+            <button type="button" class="drawer-btn-leaderboard" id="btn-drawer-leaderboard" title="Open Leaderboard">
+              Leaderboard
             </button>
             <button class="drawer-close-btn" id="btn-close-drawer">✕</button>
           </div>
@@ -738,32 +1521,47 @@
     </aside>
 
     <!-- Info / Details Modal Dialog -->
-    <div class="info-modal-overlay" id="info-modal">
+    <div class="info-modal-overlay" id="info-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="info-modal-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-          <h3 id="modal-title" style="font-family:'Fredoka', cursive; font-size:1.3rem; color:#facc15;">Judul Info</h3>
-          <button id="btn-close-info-modal"
-            style="background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">✕</button>
+        <div class="info-modal-top">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h3 id="modal-title" class="info-modal-heading">Details</h3>
+            <span id="modal-badge" class="info-modal-pill" style="display: none;"></span>
+          </div>
+          <button type="button" id="btn-close-info-modal" class="info-modal-close" title="Close"
+            aria-label="Close">✕</button>
         </div>
-        <div id="modal-badge"
-          style="display:inline-block; font-size:0.75rem; background:rgba(99,102,241,0.25); color:#a5b4fc; padding:2px 8px; border-radius:8px; margin-bottom:10px;">
-          Tahap</div>
-        <p id="modal-desc" style="color:#cbd5e1; font-size:0.95rem; line-height:1.5; margin-bottom:12px;">Deskripsi
-          detail.</p>
-        <div id="modal-example"
-          style="background:rgba(255,255,255,0.06); padding:10px 14px; border-radius:10px; font-size:0.88rem; color:#fde047; border-left:3px solid #facc15;">
-          Contoh
+
+        <div class="info-modal-audio-row">
+          <button type="button" id="btn-modal-speaker" class="info-modal-speaker" title="Play or Pause Audio"
+            aria-label="Play or Pause Audio">
+            <span id="modal-speaker-icon" class="modal-speaker-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+              </svg>
+            </span>
+            <span id="modal-speaker-text">Pause Audio</span>
+          </button>
+        </div>
+
+        <p id="modal-desc" class="info-modal-description">Description text.</p>
+        <div id="modal-example" class="info-modal-example-box">
+          Example
         </div>
       </div>
     </div>
 
     <!-- Floating Toast Notification -->
-    <div class="toast-msg" id="toast-notification">Pemberitahuan</div>
+    <div class="toast-msg" id="toast-notification">Notification</div>
 
   </main>
 
+  <!-- YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <!-- Application Logic Modules -->
-  <script type="module" src="js/app.js?v=17"></script>
+  <script type="module" src="js/app.js?v=39"></script>
 
 </body>
 

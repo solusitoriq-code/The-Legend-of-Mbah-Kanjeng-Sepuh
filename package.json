@@ -1,8 +1,15 @@
 {
-  "dependencies": {
-    "xlsx": "^0.18.5"
+  "scripts": {
+    "start": "node server.js",
+    "convert:webp": "node scripts/convert-webp.js",
+    "sync:data": "node scripts/sync-excel-to-json.js",
+    "sync:excel": "node scripts/sync-excel-to-json.js --to-excel",
+    "update:leaderboard": "node scripts/update-leaderboard.js"
   },
   "devDependencies": {
-    "docx": "^9.7.2"
+    "docx": "^9.7.2",
+    "mammoth": "^1.13.0",
+    "sharp": "^0.35.4",
+    "xlsx": "^0.18.5"
   }
 }

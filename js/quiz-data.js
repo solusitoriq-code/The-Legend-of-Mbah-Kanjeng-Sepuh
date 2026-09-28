@@ -1,171 +1,359 @@
-// Data Kuis & Evaluasi Interaktif untuk Materi Pembelajaran
+// Interactive Quiz & Learning Evaluation Data
 export const QUIZ_VOLCANO = [
   {
     id: 1,
-    question: "Apa sebutan untuk batuan cair berpijar yang masih berada di dalam perut bumi sebelum meletus?",
-    options: ["Lava", "Magma", "Lahar Dingin", "Abu Vulkanik"],
+    question: "What is the term for molten rock still contained beneath the Earth's crust before eruption?",
+    options: ["Lava", "Magma", "Cold Lahar", "Volcanic Ash"],
     answer: 1, // Magma
-    explanation: "Magma adalah batuan cair dan sangat panas yang tersimpan di dalam mantel atau kerak bumi. Jika sudah keluar ke permukaan, barulah disebut Lava."
+    explanation: "Magma is molten, high-temperature rock stored within the Earth's crust or mantle. Once it breaches the surface, it is known as Lava."
   },
   {
     id: 2,
-    question: "Ketika cairan panas dari perut bumi keluar dan mengalir di permukaan lereng gunung, cairan tersebut disebut...",
-    options: ["Lahar Hujan", "Lava", "Belerang", "Geiser"],
+    question: "When hot liquid rock erupts from the Earth and flows across mountain slopes, it is termed...",
+    options: ["Rain Lahar", "Lava", "Sulfur", "Geyser"],
     answer: 1, // Lava
-    explanation: "Lava adalah magma yang telah mencapai dan mengalir di permukaan bumi saat erupsi terjadi."
+    explanation: "Lava is magma that has breached the Earth's surface and flows during an eruption."
   },
   {
     id: 3,
-    question: "Salah satu manfaat abu vulkanik bagi kehidupan masyarakat di sekitar gunung berapi setelah erupsi mereda adalah...",
+    question: "One of the long-term benefits of volcanic ash for communities around a volcano after an eruption subsides is...",
     options: [
-      "Menyuburkan tanah pertanian dalam jangka panjang",
-      "Membuat air sungai menjadi asin",
-      "Mencegah terjadinya gempa bumi",
-      "Mengurangi populasi tanaman liar"
+      "Fertilizing agricultural soil over the long term",
+      "Making river water salty",
+      "Preventing earthquakes from occurring",
+      "Reducing wild plant populations"
     ],
     answer: 0,
-    explanation: "Abu vulkanik kaya akan unsur hara mineral penting yang membuat tanah di sekitar lereng gunung menjadi sangat subur untuk pertanian."
+    explanation: "Volcanic ash is rich in vital mineral nutrients that make soils around volcanic slopes fertile for agriculture."
   },
   {
     id: 4,
-    question: "Energi ramah lingkungan yang memanfaatkan uap panas bumi dari aktivitas vulkanik disebut energi...",
-    options: ["Biomassa", "Geotermal (Panas Bumi)", "Pembangkit Nuklir", "Hidroelektrik"],
+    question: "Eco-friendly energy harnessed from geothermal steam in volcanic activity is known as...",
+    options: ["Biomass", "Geothermal Energy", "Nuclear Power", "Hydroelectric"],
     answer: 1,
-    explanation: "Energi geotermal memanfaatkan uap panas dari reservoir air bawah tanah yang dipanaskan oleh batuan vulkanik untuk memutar turbin listrik."
+    explanation: "Geothermal energy utilizes high-temperature steam from subterranean reservoirs heated by volcanic rocks to spin electric turbines."
   },
   {
     id: 5,
-    question: "Mineral padat berwarna kuning cerah yang sering ditambang di kawah gunung berapi untuk industri dan obat adalah...",
-    options: ["Belerang (Sulfur)", "Bauksit", "Tembaga", "Batu Bara"],
+    question: "A bright yellow solid mineral commonly mined in volcanic craters for industrial and medicinal uses is...",
+    options: ["Sulfur", "Bauxite", "Copper", "Coal"],
     answer: 0,
-    explanation: "Belerang terbentuk dari kondensasi gas vulkanik di sekitar lubang kawah (fumarol) dan banyak dimanfaatkan untuk industri kosmetik, obat, dan pupuk."
+    explanation: "Sulfur forms through condensation of volcanic gases around crater vents (fumaroles) and is widely utilized in fertilizers, medicine, and cosmetics."
   },
   {
     id: 6,
-    question: "Awan panas berbahaya yang bergulung menuruni lereng dengan suhu ratusan derajat Celsius dikenal dengan sebutan...",
-    options: ["Hujan Asam", "Wedhus Gembel (Pyroclastic Flow)", "Stratosfer", "Angin Fohn"],
+    question: "A dangerous, fast-moving current of superheated gas, ash, and incandescent rock cascading down volcanic slopes is called...",
+    options: ["Acid Rain", "Pyroclastic Flow (Wedhus Gembel)", "Stratosphere", "Fohn Wind"],
     answer: 1,
-    explanation: "Wedhus gembel atau awan panas guguran adalah campuran gas vulkanik panas, abu, dan batu pijar yang bergerak sangat cepat menuruni lereng gunung."
+    explanation: "Pyroclastic flows are high-speed avalanches of superheated volcanic gas, ash, and rock fragments descending down slopes."
   },
   {
     id: 7,
-    question: "Mengapa wilayah Indonesia memiliki banyak sekali gunung api aktif di dunia?",
+    question: "Why does Indonesia possess a large concentration of active volcanoes worldwide?",
     options: [
-      "Karena berada di daerah beriklim tropis",
-      "Karena dilewati oleh garis khatulistiwa",
-      "Karena terletak di jalur Cincin Api Pasifik (Ring of Fire)",
-      "Karena dikelilingi oleh dua samudera besar"
+      "Because it is located in a tropical climate zone",
+      "Because it is crossed by the equator",
+      "Because it is situated along the Pacific Ring of Fire",
+      "Because it is surrounded by two major oceans"
     ],
     answer: 2,
-    explanation: "Indonesia terletak pada pertemuan tiga lempeng tektonik utama dunia dan berada di zona Cincin Api Pasifik (Pacific Ring of Fire)."
+    explanation: "Indonesia sits at the convergence of three major tectonic plates within the Pacific Ring of Fire."
   },
   {
     id: 8,
-    question: "Tindakan mitigasi utama yang harus segera dilakukan masyarakat saat terjadi hujan abu vulkanik adalah...",
+    question: "The primary mitigation measure that communities must immediately adopt during volcanic ashfall is...",
     options: [
-      "Mencuci kendaraan di tempat terbuka",
-      "Menggunakan masker penutup hidung dan kacamata pelindung",
-      "Menampung air hujan untuk diminum langsung",
-      "Mendaki gunung untuk melihat pemandangan kawah"
+      "Washing vehicles in open outdoor areas",
+      "Wearing protective nose masks and safety goggles",
+      "Collecting rainwater for immediate drinking",
+      "Climbing the mountain to observe crater views"
     ],
     answer: 1,
-    explanation: "Abu vulkanik sangat tajam dan mengandung silika kaca mikro. Mengenakan masker dan kacamata mencegah infeksi saluran pernapasan (ISPA) dan iritasi mata."
+    explanation: "Volcanic ash contains sharp microscopic silica shards. Wearing masks and goggles prevents acute respiratory infections and eye irritation."
   },
   {
     id: 9,
-    question: "Batu beku ringan yang banyak pori-pori rongga udaranya dan bisa mengapung di air hasil erupsi gunung berapi adalah...",
-    options: ["Batu Granit", "Batu Apung (Pumice)", "Batu Marmer", "Batu Obsidian"],
+    question: "A lightweight volcanic rock full of vesicles that can float on water after an eruption is...",
+    options: ["Granite", "Pumice", "Marble", "Obsidian"],
     answer: 1,
-    explanation: "Batu apung terbentuk ketika lava yang kaya gas mendingin dengan sangat cepat sehingga gelembung-gelembung gas terperangkap di dalamnya."
+    explanation: "Pumice forms when gas-rich lava cools rapidly, trapping expanding gas bubbles inside."
   },
   {
     id: 10,
-    question: "Objek wisata alam apa saja yang sering menjadi daya tarik di sekitar kawasan gunung berapi?",
+    question: "Which natural attractions frequently draw visitors to volcanic regions?",
     options: [
-      "Pemandian air panas alami dan jalur pendakian ke kawah",
-      "Hutan bakau air payau",
-      "Terumbu karang bawah laut",
-      "Gurun pasir gurun sahara"
+      "Natural hot springs and crater hiking trails",
+      "Brackish mangrove forests",
+      "Underwater coral reefs",
+      "Sahara desert dunes"
     ],
     answer: 0,
-    explanation: "Kawasan gunung api menawarkan panorama kawah yang eksotis, udara pegunungan yang sejuk, serta sumber mata air panas alami kaya mineral belerang."
+    explanation: "Volcanic landscapes feature panoramic craters, cool alpine air, and natural hot spring waters rich in sulfur minerals."
   }
 ];
 
 // Data Mini-Game Formatif Bahasa Inggris (Slide 10)
 export const FORMATIVE_GAME = [
   {
-    present: "Lead (Memimpin)",
+    present: "Lead",
     correct: "Led",
     options: ["Leaded", "Led", "Leading", "Leader"],
     sentence: "Raden Suryodiningrat _____ Sidayu with wisdom and justice."
   },
   {
-    present: "Build (Membangun)",
+    present: "Build",
     correct: "Built",
     options: ["Builded", "Built", "Building", "Builds"],
     sentence: "The people _____ a grand irrigation canal to save their fields."
   },
   {
-    present: "Protect (Melindungi)",
+    present: "Protect",
     correct: "Protected",
     options: ["Protected", "Protects", "Protecting", "Protect"],
     sentence: "Mbah Kanjeng Sepuh _____ the villagers from colonial injustice."
   },
   {
-    present: "Erupt (Meletus)",
+    present: "Erupt",
     correct: "Erupted",
     options: ["Erupting", "Erupted", "Erupts", "Eruption"],
     sentence: "The ancient volcano _____ thousands of years ago, shaping the fertile valley."
   },
   {
-    present: "Bring (Membawa)",
+    present: "Bring",
     correct: "Brought",
     options: ["Brang", "Brought", "Bringed", "Bringing"],
     sentence: "The eruption _____ rich minerals that made the soil fertile."
   }
 ];
 
-// Data Detail Generic Structure (Slide 7)
+// Data Detail Generic Structure (Slide 6)
 export const GENERIC_STRUCTURES = {
   orientation: {
-    title: "Orientation (Pengenalan)",
-    badge: "Tahap 1",
-    desc: "Memperkenalkan tokoh-tokoh utama, latar waktu, dan tempat terjadinya cerita.",
-    example: "Contoh pada teks: Sidayu pada abad ke-19 di masa kepemimpinan Raden Adipati Suryodiningrat (Mbah Kanjeng Sepuh)."
+    title: "Orientation",
+    desc: "Introduces the characters, setting (time and place), and background situation.",
+    audioText: "Introduces the characters, setting, time and place, and background situation."
   },
   complication: {
-    title: "Complication (Konflik/Tantangan)",
-    badge: "Tahap 2",
-    desc: "Menceritakan tantangan, krisis, atau masalah yang muncul dan dihadapi oleh tokoh.",
-    example: "Contoh: Musim kemarau panjang yang mengancam panen warga serta tekanan dari penjajah kolonial."
+    title: "Complication",
+    desc: "Presents the challenges, rising conflicts, or major crises faced by the protagonist.",
+    audioText: "Presents the challenges, rising conflicts, or major crises faced by the protagonist."
   },
   resolution: {
-    title: "Resolution (Penyelesaian)",
-    badge: "Tahap 3",
-    desc: "Bagaimana tokoh utama memecahkan masalah atau konflik yang terjadi.",
-    example: "Contoh: Pembangunan saluran air/irigasi Sidayu dan diplomasi berani demi melindungi rakyatnya."
+    title: "Resolution",
+    desc: "Shows how the protagonist resolves the problem, leading to the outcome of the story.",
+    audioText: "Shows how the protagonist resolves the problem, leading to the outcome of the story."
   },
   coda: {
-    title: "Coda (Pesan Moral/Warisan)",
-    badge: "Tahap 4",
-    desc: "Penutup cerita yang berisi pesan moral, nilai kearifan lokal, atau peninggalan yang masih dikenang.",
-    example: "Contoh: Nilai keteladanan kepemimpinan yang jujur, berilmu, dan mencintai kesejahteraan rakyat."
+    title: "Coda",
+    desc: "Concludes the story with a moral lesson, cultural reflection, or the legacy left behind.",
+    audioText: "Concludes the story with a moral lesson, cultural reflection, or the legacy left behind."
+  }
+};
+
+// Data Detail Language Features (Slide 11)
+export const LANGUAGE_FEATURES = {
+  past_tense: {
+    title: "Narrative Past tense",
+    desc: "Simple Past (V2) shows the historical events and milestones in chronological order.",
+    example: "He governed Sedayu with deep wisdom and opposed unfair levies.",
+    audioText: "Narrative Past tense. Simple Past shows the historical events and milestones in chronological order. Example: He governed Sedayu with deep wisdom and opposed unfair levies."
+  },
+  action_verbs: {
+    title: "Action Verbs",
+    desc: "Shows purposeful, deliberate, and principled physical activity rather than passive observation.",
+    example: "excavated, confronted, roamed, delivered, carved, replenished, and quenched.",
+    audioText: "Action Verbs. Shows purposeful, deliberate, and principled physical activity rather than passive observation. Example: excavated, confronted, roamed, delivered, carved, replenished, and quenched."
+  },
+  temporal_connectives: {
+    title: "Temporal Connectives and Adverbial Transitions",
+    desc: "Ensures flawless chronological transitions, increasing story flow and dramatic timing.",
+    example: "At dawn, under cover of darkness, over the borderlands, as a result.",
+    audioText: "Temporal Connectives and Adverbial Transitions. Ensures flawless chronological transitions, increasing story flow and dramatic timing. Example: At dawn, under cover of darkness, over the borderlands, as a result."
+  },
+  direct_reported: {
+    title: "Direct and Reported",
+    desc: 'Speech is used to create tension and express personal beliefs (for example, he declared, "This market is for everyone," rejecting colonial tariffs).',
+    example: null,
+    audioText: 'Direct and Reported. Speech is used to create tension and express personal beliefs, for example, he declared, This market is for everyone, rejecting colonial tariffs.'
+  },
+  descriptive_adjectives: {
+    title: "Descriptive Adjectives",
+    desc: "produce vivid imagery and a strong tone (tyrannical oversight, parched ground, unrestrained discipline, lasting legacy).",
+    example: null,
+    audioText: "Descriptive Adjectives. Produce vivid imagery and a strong tone, such as tyrannical oversight, parched ground, unrestrained discipline, lasting legacy."
   }
 };
 
 // Data Glosarium Materi & Sains Vulkanik
 export const GLOSARIUM_DATA = [
-  { term: 'Legend', category: 'Narrative', def: 'Cerita rakyat tradisional dari masa lalu yang mengisahkan tokoh atau peristiwa lokal sarat pesan moral.' },
-  { term: 'Orientation', category: 'Narrative', def: 'Bagian pembuka teks naratif yang mengenalkan tokoh, latar waktu, dan tempat berlangsungnya cerita.' },
-  { term: 'Complication', category: 'Narrative', def: 'Bagian tengah yang menceritakan munculnya krisis, konflik, atau tantangan utama yang dihadapi tokoh.' },
-  { term: 'Resolution', category: 'Narrative', def: 'Tahap penyelesaian di mana tokoh utama berhasil mengatasi krisis dan memecahkan konflik yang terjadi.' },
-  { term: 'Coda', category: 'Narrative', def: 'Bagian penutup cerita yang berisi kesimpulan pesan moral, kearifan lokal, dan nilai keteladanan bagi pembaca.' },
-  { term: 'Action Verbs', category: 'Grammar', def: 'Kata kerja yang menyatakan tindakan fisik nyata secara langsung (contoh: build, dig, confront, protect).' },
-  { term: 'Temporal Connectives', category: 'Grammar', def: 'Kata atau frasa penghubung penanda urutan kronologis waktu (contoh: at daybreak, after that, then).' },
-  { term: 'Magma', category: 'IPA / Vulkanik', def: 'Cairan batuan pijar bersuhu sangat tinggi yang masih berada di dalam perut atau mantel bumi.' },
-  { term: 'Lava', category: 'IPA / Vulkanik', def: 'Magma cair panas yang telah keluar menembus ke permukaan lereng gunung saat erupsi berlangsung.' },
-  { term: 'Geotermal', category: 'IPA / Vulkanik', def: 'Pembangkit energi ramah lingkungan yang memanfaatkan uap panas alami dari reservoir vulkanik bawah tanah.' },
-  { term: 'Belerang (Sulfur)', category: 'IPA / Vulkanik', def: 'Mineral vulkanik alami berwarna kuning cerah di sekitar kawah yang dimanfaatkan untuk industri pupuk dan obat.' },
-  { term: 'Raden Adipati Suryodiningrat', category: 'Sejarah', def: 'Adipati Sidayu Gresik abad ke-19 yang arif, bijaksana, dan dikenal oleh masyarakat luas sebagai Mbah Kanjeng Sepuh.' }
+  { term: 'Legend', category: 'Narrative', def: 'A traditional folktale from the past about local historical figures or events, rich with moral messages.' },
+  { term: 'Orientation', category: 'Narrative', def: 'The opening part of a narrative text that introduces characters, time setting, and the place of the story.' },
+  { term: 'Complication', category: 'Narrative', def: 'The middle part that presents rising crises, conflicts, or major challenges faced by the protagonist.' },
+  { term: 'Resolution', category: 'Narrative', def: 'The solving phase where the protagonist successfully overcomes the crisis and resolves the conflict.' },
+  { term: 'Coda', category: 'Narrative', def: 'The concluding part of a story containing moral lessons, cultural wisdom, and exemplary values for readers.' },
+  { term: 'Action Verbs', category: 'Grammar', def: 'Verbs that express deliberate, physical deeds directly (e.g. build, dig, confront, protect).' },
+  { term: 'Temporal Connectives', category: 'Grammar', def: 'Connecting words or phrases signaling chronological order of time (e.g. at daybreak, after that, then).' },
+  { term: 'Magma', category: 'Science / Volcanology', def: 'Extremely hot molten glowing rock stored beneath the Earth\'s crust or mantle.' },
+  { term: 'Lava', category: 'Science / Volcanology', def: 'Hot molten magma that has breached the Earth\'s surface and flows down volcano slopes during an eruption.' },
+  { term: 'Geothermal', category: 'Science / Volcanology', def: 'Eco-friendly renewable energy harnessing natural steam from underground volcanic reservoirs.' },
+  { term: 'Sulfur', category: 'Science / Volcanology', def: 'A bright yellow natural volcanic mineral found around craters, used for agriculture and medicine.' },
+  { term: 'Raden Adipati Suryodiningrat', category: 'History', def: 'A wise 19th-century Regent of Sidayu, Gresik, revered widely by local communities as Mbah Kanjeng Sepuh.' }
+];
+
+// Data Bank Soal Post-test (15 Soal: 10 MCQ & 5 Matching) dari materi_evaluasi.xlsx
+export const POSTTEST_QUESTIONS = [
+  {
+    "ID": 1,
+    "Tipe": "mcq",
+    "Pertanyaan": "Read the opening lines:\n\"Once Upon a time, in the Gresik Region there was once a powerful regency called Sedayu on the north coast of East Java ... Kanjeng Sepuh was the eighth ruler of Sedayu in the early 1800s.\"\nThis excerpt fulfils the function of the Orientation stage because it ....",
+    "Opsi_A": "resolves the regional border dispute between local villagers",
+    "Opsi_B": "introduces the historical timeframe, geographic setting, and the protagonist",
+    "Opsi_C": "delivers the final moral reflection for future generations",
+    "Opsi_D": "describes the miraculous origins of local water springs",
+    "Opsi_E": "provides modern statistical records of the regency",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "Orientation introduces the historical timeframe, geographic setting (Sedayu, Gresik), and the protagonist (Kanjeng Sepuh)."
+  },
+  {
+    "ID": 2,
+    "Tipe": "mcq",
+    "Pertanyaan": "Consider the sentence:\n\"He ... (refuse) to let his people suffer, so he firmly ... (push) aside the colonial tax decree.\"\nThe correct Past Tense (V2) forms to complete the sentence are ....",
+    "Opsi_A": "refuses – pushes",
+    "Opsi_B": "refused – pushed",
+    "Opsi_C": "refusing – pushing",
+    "Opsi_D": "was refuse – was push",
+    "Opsi_E": "refuse – pushed",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "Both verbs describe past completed historical events in narrative text: refuse -> refused, push -> pushed."
+  },
+  {
+    "ID": 3,
+    "Tipe": "mcq",
+    "Pertanyaan": "In the legend of Rojo Pandito (Mbah Kanjeng Sepuh), which external crises disrupt the peace and initiate the Complication stage?",
+    "Opsi_A": "The construction of the grand mosque and tomb in Kauman",
+    "Opsi_B": "The surrender of noble steeds to Kyai Jayeng Katon",
+    "Opsi_C": "Unfair colonial tax demands and a severe drought leading to border clashes",
+    "Opsi_D": "The naming of the communal traditional market as Kabean",
+    "Opsi_E": "The retirement of Kanjeng Sepuh as the regional ruler",
+    "Kunci": "C",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "The complication begins when unfair colonial taxes and a severe regional drought disrupt societal peace."
+  },
+  {
+    "ID": 4,
+    "Tipe": "mcq",
+    "Pertanyaan": "Read the following sentence:\n\"During one of his trips at night, he dug a canal in Tempuran that is now known as Kalibela.\"\nThe verb dug is classified as an Action Verb because it ....",
+    "Opsi_A": "reflects a static mental contemplation",
+    "Opsi_B": "connects the subject to an adjective without movement",
+    "Opsi_C": "denotes a deliberate, physical action performed by the subject",
+    "Opsi_D": "functions as an auxiliary verb indicating a future condition",
+    "Opsi_E": "modifies the time and place of the event",
+    "Kunci": "C",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "'Dug' (from dig) represents an intentional physical deed rather than a passive state."
+  },
+  {
+    "ID": 5,
+    "Tipe": "mcq",
+    "Pertanyaan": "Read the passage:\n\"Under cover of darkness, he walked across Sedayu to deliver fresh water, and at dawn, he stood over the running canal to reconcile both sides.\"\nThe bold phrases serve as linguistic devices to ....",
+    "Opsi_A": "describe the physical appearance of the colonial officers",
+    "Opsi_B": "establish chronological sequencing and signal smooth temporal transitions",
+    "Opsi_C": "convert direct quotes into reported speech structures",
+    "Opsi_D": "verify the scientific flow rate of the canal water",
+    "Opsi_E": "identify the defensive perimeter of the royal palace",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "'Under cover of darkness' and 'at dawn' establish chronological sequencing and signal smooth temporal transitions."
+  },
+  {
+    "ID": 6,
+    "Tipe": "mcq",
+    "Pertanyaan": "During his secret nocturnal missions, Kanjeng Sepuh departed in disguise and carried supplies. Which pair represents the accurate base verb (V1) to past simple (V2) transformation for these actions?",
+    "Opsi_A": "Leave - Leaved ; Bring - Bringed",
+    "Opsi_B": "Leave - Left ; Bring - Brought",
+    "Opsi_C": "Leave - Left ; Bring - Brang",
+    "Opsi_D": "Leave - Leaving ; Bring - Brought",
+    "Opsi_E": "Leave - Was left ; Bring - Brought",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "Irregular past simple forms: Leave becomes Left, and Bring becomes Brought."
+  },
+  {
+    "ID": 7,
+    "Tipe": "mcq",
+    "Pertanyaan": "Kanjeng Sepuh declared to the colonial official: \"This market will be called 'Kabean,' which means it belongs to everyone, and my people will not have to pay any unfair taxes on it!\"\nThe author uses this direct speech primarily to show ....",
+    "Opsi_A": "Kanjeng Sepuh's hesitation and indecisiveness in public matters",
+    "Opsi_B": "Kanjeng Sepuh's firm stance, moral courage, and commitment to the common folk",
+    "Opsi_C": "the merchants' willingness to comply with Batavia's decrees",
+    "Opsi_D": "a mutual financial agreement between the regency and Batavia",
+    "Opsi_E": "the formal legal protocol of colonial councils",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "Direct dialogue highlights Kanjeng Sepuh's moral courage and unwavering defense of common citizens."
+  },
+  {
+    "ID": 8,
+    "Tipe": "mcq",
+    "Pertanyaan": "How are the severe drought and the border hostilities between the villages permanently resolved in the story's Resolution?",
+    "Opsi_A": "By seeking external military reinforcement from the Mataram kingdom",
+    "Opsi_B": "By relocating all agrarian families to the coastal ports of Surabaya",
+    "Opsi_C": "By submitting completely to the higher tax orders of the colonial rulers",
+    "Opsi_D": "By excavating the Kalibela canal and constructing the springs of Telaga Rambit and Sumur Dhahar",
+    "Opsi_E": "By having Kyai Jayeng Katon command the noble steeds into battle",
+    "Kunci": "D",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "The crisis was resolved by excavating the Kalibela irrigation canal and constructing the Telaga Rambit springs."
+  },
+  {
+    "ID": 9,
+    "Tipe": "mcq",
+    "Pertanyaan": "What is the primary moral takeaway (Coda) emphasized at the conclusion of Kanjeng Sepuh's narrative?",
+    "Opsi_A": "High political status is designed to display personal prestige and accumulate private assets",
+    "Opsi_B": "Authentic leadership is rooted in moral courage, selfless charity, and serving the vulnerable",
+    "Opsi_C": "Border tensions can only be effectively handled through armed warfare",
+    "Opsi_D": "Unchecked taxation is the clearest benchmark of economic success",
+    "Opsi_E": "Earthly authority is permanent and remains tied to one individual",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "The coda teaches that authentic leadership is rooted in moral courage, selfless charity, and serving the vulnerable."
+  },
+  {
+    "ID": 10,
+    "Tipe": "mcq",
+    "Pertanyaan": "A vital social function of a legend is to preserve collective cultural heritage. Which tangible relics mentioned in the text continue to validate this story today?",
+    "Opsi_A": "The colonial council table in Batavia and ancient trade ships in Surabaya",
+    "Opsi_B": "The Grand Tomb and Mosque in Kauman, Sidayu, alongside Telaga Rambit",
+    "Opsi_C": "The historical bronze statues of Kyai Jayeng Katon in Lamongan",
+    "Opsi_D": "The stone ramparts of the Mataram royal pavilion",
+    "Opsi_E": "The original written decree of the Kabean tax policy",
+    "Kunci": "B",
+    "Pasangan_Kiri": "",
+    "Pasangan_Kanan": "",
+    "Pembahasan": "Physical landmarks in Sidayu (the Grand Mosque, Tomb, and Telaga Rambit) validate the living heritage of the legend."
+  },
+  {
+    "ID": 11,
+    "Tipe": "matching",
+    "Pertanyaan": "Match each base verb (Column A) with its correct irregular past form (Column B) based on the actions performed in the story!",
+    "Opsi_A": "",
+    "Opsi_B": "",
+    "Opsi_C": "",
+    "Opsi_D": "",
+    "Opsi_E": "",
+    "Kunci": "",
+    "Pasangan_Kiri": "Leave (to depart at night)|Throw (to cast tax decree)|Dig (to excavate canal)|Bring (to carry fresh water)|Build (to construct springs)",
+    "Pasangan_Kanan": "left|threw|dug|brought|built",
+    "Pembahasan": "Answer Key: Leave ➔ left | Throw ➔ threw | Dig ➔ dug | Bring ➔ brought | Build ➔ built."
+  }
 ];

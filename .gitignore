@@ -1,3 +1,12 @@
 node_modules/
 package-lock.json
-scripts/
+~$*
+.pending_scores.json
+*.log
+.vscode/
+
+# Aset media besar & file lama (tidak boleh di-push ke git/Vercel)
+assets/slides/*.png
+assets/slides/video_slide_12.mp4
+assets/slides/*_old.webp
+

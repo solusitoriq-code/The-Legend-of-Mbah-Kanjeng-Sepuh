@@ -1,23 +1,22 @@
-const CACHE_NAME = 'materi-interaktif-v17';
+const CACHE_NAME = 'materi-interaktif-v39';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
-  './css/style.css?v=17',
+  './css/style.css?v=39',
   './js/app.js',
-  './js/app.js?v=17',
+  './js/app.js?v=39',
   './js/audio.js',
-  './js/audio.js?v=17',
+  './js/audio.js?v=20',
   './js/data-service.js',
-  './js/data-service.js?v=17',
+  './js/data-service.js?v=20',
   './js/quiz-data.js',
-  './js/quiz-data.js?v=17',
+  './js/quiz-data.js?v=20',
   './data/materi_evaluasi.json',
   './manifest.json',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
-  './assets/icons/icon.svg',
-  './assets/slides/slide_1.webp'
+  './assets/icons/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -56,6 +55,21 @@ self.addEventListener('fetch', (event) => {
 
   // Bypass cross-origin requests (Wordwall, Sketchfab, Google Fonts, etc.)
   if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Network-First untuk CSS dan JS berversi (query ?v=) agar perubahan langsung aktif
+  const url = new URL(event.request.url);
+  if ((url.pathname.endsWith('.css') || url.pathname.endsWith('.js')) && url.search.includes('v=')) {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const copy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return networkResponse;
+      }).catch(() => caches.match(event.request))
+    );
     return;
   }
 

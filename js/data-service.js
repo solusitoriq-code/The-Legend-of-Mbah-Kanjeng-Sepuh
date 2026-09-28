@@ -4,15 +4,18 @@
  * Mendukung mode luring (LOCAL JSON/XLSX) dan daring (GOOGLE_SHEETS).
  */
 
+import { POSTTEST_QUESTIONS } from './quiz-data.js';
+
 export const CONFIG = {
   // Mode operasional data: 'LOCAL' atau 'GOOGLE_SHEETS'
-  MODE: 'LOCAL',
+  // MODE: 'LOCAL',
+  MODE: 'GOOGLE_SHEETS',
 
   // Lokasi data lokal (offline fallback)
   LOCAL_DATA_PATH: './data/materi_evaluasi.json',
 
   // URL Web App Google Apps Script (diisi saat mode GOOGLE_SHEETS diaktifkan)
-  GOOGLE_SHEETS_URL: ''
+  GOOGLE_SHEETS_URL: 'https://script.google.com/macros/s/AKfycbytpjrJIgMYHO-V2rQYyir_afvgAM0XBcXh-latQcCbwsL0kFrYjZ_gSPhxpm2xYg6s/exec'
 };
 
 const STORAGE_KEYS = {
@@ -21,7 +24,10 @@ const STORAGE_KEYS = {
   POSTTEST_SCORE: 'evaluasi_posttest_score',
   LOCAL_DATA_CACHE: 'evaluasi_data_cache',
   LEADERBOARD_LOCAL: 'evaluasi_leaderboard_local',
-  MAX_SLIDE_VISITED: 'evaluasi_max_slide_visited'
+  MAX_SLIDE_VISITED: 'evaluasi_max_slide_visited',
+  INTRO_COMPLETED: 'evaluasi_intro_completed',
+  SLIDE6_STRUCTURES: 'evaluasi_slide6_structures',
+  SLIDE11_FEATURES: 'evaluasi_slide11_features'
 };
 
 /**
@@ -121,8 +127,57 @@ class DataService {
       if (savedSlide !== null) {
         this.maxSlideVisited = Math.max(1, parseInt(savedSlide, 10) || 1);
       }
+
+      // Muat cache dataset lokal langsung dari storage (0ms)
+      const cached = safeStorage.getItem(STORAGE_KEYS.LOCAL_DATA_CACHE);
+      if (cached) {
+        this.data = JSON.parse(cached);
+        this.isLoaded = true;
+      }
     } catch (e) {
-      console.warn('[DataService] Gagal membaca session storage:', e);
+      console.warn('[DataService] Failed to read session storage:', e);
+    }
+
+    // Jalankan preloading data lokal & sinkronisasi daring di latar belakang
+    this.preloadData();
+  }
+
+  /**
+   * Preload data lokal instan dan sinkronisasi daring di latar belakang
+   */
+  preloadData() {
+    // 1. Pastikan data lokal selalu tersedia di memori (10-30ms)
+    if (!this.data) {
+      fetch(CONFIG.LOCAL_DATA_PATH)
+        .then(r => r.json())
+        .then(localData => {
+          if (!this.data) {
+            this.data = localData;
+            this.isLoaded = true;
+            safeStorage.setItem(STORAGE_KEYS.LOCAL_DATA_CACHE, JSON.stringify(localData));
+          }
+        })
+        .catch(() => {});
+    }
+
+    // 2. Jika mode GOOGLE_SHEETS, sinkronkan data terbaru di latar belakang tanpa memblokir interaksi
+    if (CONFIG.MODE === 'GOOGLE_SHEETS' && CONFIG.GOOGLE_SHEETS_URL) {
+      setTimeout(() => {
+        fetch(`${CONFIG.GOOGLE_SHEETS_URL}?action=getData`, {
+          headers: { 'Accept': 'application/json' }
+        })
+          .then(r => r.json())
+          .then(remoteData => {
+            if (remoteData && remoteData.success) {
+              this.data = remoteData;
+              this.isLoaded = true;
+              safeStorage.setItem(STORAGE_KEYS.LOCAL_DATA_CACHE, JSON.stringify(remoteData));
+            }
+          })
+          .catch(err => {
+            console.warn('[DataService] Background sync deferred:', err.message);
+          });
+      }, 400);
     }
   }
 
@@ -156,7 +211,7 @@ class DataService {
       this.isLoaded = true;
       return this.data;
     } catch (error) {
-      console.warn('[DataService] Memuat data gagal, mencoba cache lokal:', error);
+      console.warn('[DataService] Failed to load data, attempting local cache:', error);
       const cached = safeStorage.getItem(STORAGE_KEYS.LOCAL_DATA_CACHE);
       if (cached) {
         this.data = JSON.parse(cached);
@@ -168,24 +223,41 @@ class DataService {
   }
 
   /**
-   * Validasi NISN siswa
+   * Validasi NISN siswa (Dioptimalkan responsif 400-500ms)
    * @param {string} nisn
    * @returns {Promise<{success: boolean, student?: object, message?: string}>}
    */
   async validateNISN(nisn) {
+    const startTime = Date.now();
     const cleanNISN = String(nisn || '').trim();
     if (!cleanNISN) {
-      return { success: false, message: 'Harap masukkan nomor NIS atau NISN Anda.' };
+      return { success: false, message: 'Please enter your Student ID (NIS or NISN).' };
     }
 
+    // Pastikan data lokal sudah tersedia di memori
     if (!this.data) {
-      await this.loadData();
+      try {
+        const cached = safeStorage.getItem(STORAGE_KEYS.LOCAL_DATA_CACHE);
+        if (cached) {
+          this.data = JSON.parse(cached);
+          this.isLoaded = true;
+        } else {
+          const res = await fetch(CONFIG.LOCAL_DATA_PATH);
+          if (res.ok) {
+            this.data = await res.json();
+            this.isLoaded = true;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
     }
 
+    // 1. Cek instan di basis data lokal / cache memori
     const students = this.data?.dataSiswa || [];
     let found = students.find(s => String(s.NISN).trim() === cleanNISN || (s.NIS && String(s.NIS).trim() === cleanNISN));
 
-    // Jika mode GOOGLE_SHEETS aktif dan belum ditemukan di memori lokal, coba verifikasi daring
+    // 2. Jika tidak ditemukan di lokal dan mode GOOGLE_SHEETS aktif, tanyakan ke Google Sheets
     if (!found && CONFIG.MODE === 'GOOGLE_SHEETS' && CONFIG.GOOGLE_SHEETS_URL) {
       try {
         const resp = await fetch(`${CONFIG.GOOGLE_SHEETS_URL}?action=checkNISN&nisn=${encodeURIComponent(cleanNISN)}`);
@@ -203,19 +275,25 @@ class DataService {
       }
     }
 
+    // Beri jeda visual halus sekitar 400-500ms agar animasi tombol "Verifying..." terlihat natural
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 450) {
+      await new Promise(resolve => setTimeout(resolve, 450 - elapsed));
+    }
+
     if (found) {
       this.currentStudent = found;
       try {
         safeStorage.setItem(STORAGE_KEYS.CURRENT_STUDENT, JSON.stringify(found));
       } catch (e) {
-        console.warn('[DataService] Gagal menyimpan data siswa ke local storage', e);
+        console.warn('[DataService] Failed to save student data to local storage', e);
       }
       return { success: true, student: found };
     }
 
     return {
       success: false,
-      message: `NIS/NISN "${cleanNISN}" tidak terdaftar di basis data.`
+      message: `Student ID (NIS/NISN) "${cleanNISN}" is not registered in the database.`
     };
   }
 
@@ -241,9 +319,17 @@ class DataService {
    */
   async getPosttestQuestions() {
     if (!this.data) {
-      await this.loadData();
+      try {
+        await this.loadData();
+      } catch (err) {
+        console.warn('[DataService] loadData failed, falling back to POSTTEST_QUESTIONS:', err);
+      }
     }
-    return this.data?.soalPosttest || [];
+    const questions = this.data?.soalPosttest;
+    if (Array.isArray(questions) && questions.length > 0) {
+      return questions;
+    }
+    return POSTTEST_QUESTIONS;
   }
 
   /**
@@ -253,10 +339,20 @@ class DataService {
   savePretestScore(score) {
     this.pretestScore = Number(score);
     try {
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.PRETEST_SCORE);
+      safeStorage.setItem(key, String(score));
       safeStorage.setItem(STORAGE_KEYS.PRETEST_SCORE, String(score));
     } catch (e) {
       console.warn(e);
     }
+
+    // Otomatis kirim nilai pretest ke database / data/materi_evaluasi.xlsx
+    this.submitScore({
+      nilaiPretest: score,
+      isPretest: true
+    }).catch(err => {
+      console.warn('[DataService] Pretest auto-submit notice:', err);
+    });
   }
 
   getPretestScore() {
@@ -324,6 +420,32 @@ class DataService {
   }
 
   /**
+   * Mengecek apakah Slide 1 & 2 (Intro) sudah pernah dibuka
+   */
+  isIntroCompleted() {
+    try {
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.INTRO_COMPLETED);
+      const val = (key && safeStorage.getItem(key)) || safeStorage.getItem(STORAGE_KEYS.INTRO_COMPLETED);
+      return val === 'true' || this.getMaxSlideVisited() >= 3;
+    } catch (e) {
+      return this.getMaxSlideVisited() >= 3;
+    }
+  }
+
+  /**
+   * Menandai bahwa Slide 1 & 2 (Intro) sudah pernah dibuka
+   */
+  setIntroCompleted() {
+    try {
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.INTRO_COMPLETED);
+      if (key) safeStorage.setItem(key, 'true');
+      safeStorage.setItem(STORAGE_KEYS.INTRO_COMPLETED, 'true');
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /**
    * Mengecek apakah Post-test (Slide 15) sudah terbuka
    */
   isPosttestUnlocked() {
@@ -331,8 +453,8 @@ class DataService {
   }
 
   /**
-   * Mengirim / menyimpan skor evaluasi siswa ke Leaderboard
-   * @param {object} payload { timestamp, nisn, nama, nilaiPretest, nilaiPosttest, totalSkor }
+   * Mengirim / menyimpan skor evaluasi siswa ke data/materi_evaluasi.xlsx & Leaderboard
+   * @param {object} payload { timestamp, nisn, nama, nilaiPretest, nilaiPosttest, totalSkor, isPretest }
    */
   async submitScore(payload) {
     if (!this.data) {
@@ -343,36 +465,84 @@ class DataService {
     const now = new Date();
     const defaultTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-    const preVal = Number(payload.nilaiPretest ?? payload.Nilai_Pretest ?? this.pretestScore ?? 0);
-    const postVal = Number(payload.nilaiPosttest ?? payload.Nilai_Posttest ?? this.posttestScore ?? 0);
-    const totalVal = Number(payload.totalSkor ?? payload.Total_Skor ?? postVal);
+    const isPretestOnly = Boolean(payload.isPretest || (payload.nilaiPosttest === undefined && payload.nilaiPretest !== undefined));
 
-    // Hitung N-Gain Hake
+    const preVal = payload.nilaiPretest !== undefined ? Number(payload.nilaiPretest) : (this.pretestScore !== null ? Number(this.pretestScore) : undefined);
+    const postVal = payload.nilaiPosttest !== undefined ? Number(payload.nilaiPosttest) : (this.posttestScore !== null ? Number(this.posttestScore) : undefined);
+
+    if (preVal !== undefined) this.pretestScore = preVal;
+    if (postVal !== undefined) this.posttestScore = postVal;
+
+    const totalVal = Number(payload.totalSkor ?? postVal ?? preVal ?? 0);
+
+    // Hitung N-Gain Hake jika pretest dan posttest ada
     let nGain = 0;
-    if (100 - preVal <= 0) {
-      nGain = postVal >= 100 ? 1.0 : 0.0;
-    } else {
-      nGain = Math.round(((postVal - preVal) / (100 - preVal)) * 100) / 100;
+    if (preVal !== undefined && postVal !== undefined) {
+      if (100 - preVal <= 0) {
+        nGain = postVal >= 100 ? 1.0 : 0.0;
+      } else {
+        nGain = Math.round(((postVal - preVal) / (100 - preVal)) * 100) / 100;
+      }
     }
 
     const record = {
       Timestamp: payload.timestamp || payload.Timestamp || defaultTimestamp,
       NISN: payload.nisn || payload.NISN || this.currentStudent?.NISN || '-',
-      Nama: payload.nama || payload.Nama || this.currentStudent?.Nama || 'Siswa',
-      Nilai_Pretest: preVal,
-      Nilai_Posttest: postVal,
+      Nama: payload.nama || payload.Nama || this.currentStudent?.Nama || 'Student',
+      Nilai_Pretest: preVal !== undefined ? preVal : 0,
+      Nilai_Posttest: postVal !== undefined ? postVal : (isPretestOnly ? '' : 0),
       Total_Skor: totalVal,
-      Peningkatan: postVal - preVal,
+      Peningkatan: (preVal !== undefined && postVal !== undefined) ? (postVal - preVal) : 0,
       Nilai_NGain: nGain,
-      // Alias huruf kecil untuk kompatibilitas
       timestamp: payload.timestamp || defaultTimestamp,
       nisn: payload.nisn || this.currentStudent?.NISN || '-',
-      nama: payload.nama || this.currentStudent?.Nama || 'Siswa',
+      nama: payload.nama || this.currentStudent?.Nama || 'Student',
       nilaiPretest: preVal,
       nilaiPosttest: postVal,
       totalSkor: totalVal
     };
 
+    // 1. Simpan langsung ke backend server lokal yang menulis ke data/materi_evaluasi.xlsx
+    try {
+      const serverPayload = {
+        timestamp: record.Timestamp,
+        nisn: record.NISN,
+        nis: payload.nis || this.currentStudent?.NIS || '',
+        nama: record.Nama,
+        kelas: payload.kelas || this.currentStudent?.Kelas || '',
+        nilaiPretest: preVal,
+        nilaiPosttest: postVal,
+        totalSkor: totalVal
+      };
+
+      let localSaved = false;
+      try {
+        const resp = await fetch('/api/save-score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(serverPayload)
+        });
+        if (resp && resp.ok) localSaved = true;
+      } catch (e1) {
+        // Abaikan jika bukan relative host
+      }
+
+      if (!localSaved) {
+        try {
+          await fetch('http://localhost:3000/api/save-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(serverPayload)
+          });
+        } catch (e2) {
+          // Server lokal tidak aktif (misal running static hosting)
+        }
+      }
+    } catch (localErr) {
+      console.warn('[DataService] Local score sync failed:', localErr);
+    }
+
+    // 2. Kirim ke Google Sheets jika mode GOOGLE_SHEETS aktif
     if (CONFIG.MODE === 'GOOGLE_SHEETS' && CONFIG.GOOGLE_SHEETS_URL) {
       try {
         await fetch(CONFIG.GOOGLE_SHEETS_URL, {
@@ -382,11 +552,11 @@ class DataService {
           body: JSON.stringify(record)
         });
       } catch (err) {
-        console.warn('[DataService] Gagal kirim ke Google Sheets, mencadangkan ke lokal:', err);
+        console.warn('[DataService] Failed to send to Google Sheets, backing up locally:', err);
       }
     }
 
-    // Selalu perbarui cache leaderboard lokal
+    // 3. Selalu perbarui cache leaderboard lokal
     try {
       let localLb = [];
       const stored = safeStorage.getItem(STORAGE_KEYS.LEADERBOARD_LOCAL);
@@ -413,7 +583,7 @@ class DataService {
 
       safeStorage.setItem(STORAGE_KEYS.LEADERBOARD_LOCAL, JSON.stringify(localLb));
     } catch (e) {
-      console.warn('[DataService] Gagal perbarui leaderboard lokal:', e);
+      console.warn('[DataService] Failed to update local leaderboard:', e);
     }
 
     return record;
@@ -442,7 +612,7 @@ class DataService {
           }
         }
       } catch (err) {
-        console.warn('[DataService] Gagal memuat leaderboard daring, beralih ke cache lokal:', err);
+        console.warn('[DataService] Failed to load online leaderboard, falling back to local cache:', err);
       }
     }
 
@@ -501,12 +671,73 @@ class DataService {
   }
 
   /**
+   * Mengambil progres eksplorasi 4 struktur generic Slide 6
+   * @returns {string[]}
+   */
+  getSlide6Progress() {
+    try {
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE6_STRUCTURES);
+      const val = (key && safeStorage.getItem(key)) || safeStorage.getItem(STORAGE_KEYS.SLIDE6_STRUCTURES);
+      return val ? JSON.parse(val) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
+   * Menyimpan progres eksplorasi struktur generic Slide 6
+   * @param {string[]} structures
+   */
+  saveSlide6Progress(structures) {
+    try {
+      const json = JSON.stringify(structures);
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE6_STRUCTURES);
+      if (key) safeStorage.setItem(key, json);
+      safeStorage.setItem(STORAGE_KEYS.SLIDE6_STRUCTURES, json);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /**
+   * Mengambil progres eksplorasi 5 fitur bahasa Slide 11
+   * @returns {string[]}
+   */
+  getSlide11Progress() {
+    try {
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE11_FEATURES);
+      const val = (key && safeStorage.getItem(key)) || safeStorage.getItem(STORAGE_KEYS.SLIDE11_FEATURES);
+      return val ? JSON.parse(val) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
+   * Menyimpan progres eksplorasi fitur bahasa Slide 11
+   * @param {string[]} features
+   */
+  saveSlide11Progress(features) {
+    try {
+      const json = JSON.stringify(features);
+      const key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE11_FEATURES);
+      if (key) safeStorage.setItem(key, json);
+      safeStorage.setItem(STORAGE_KEYS.SLIDE11_FEATURES, json);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /**
    * Reset data sesi siswa aktif
    */
   clearSession() {
     const slideKey = this.getStorageKeyWithNISN(STORAGE_KEYS.MAX_SLIDE_VISITED);
+    const introKey = this.getStorageKeyWithNISN(STORAGE_KEYS.INTRO_COMPLETED);
     const pretestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.PRETEST_SCORE);
     const posttestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.POSTTEST_SCORE);
+    const slide6Key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE6_STRUCTURES);
+    const slide11Key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE11_FEATURES);
 
     this.currentStudent = null;
     this.pretestScore = null;
@@ -517,9 +748,15 @@ class DataService {
     safeStorage.removeItem(STORAGE_KEYS.PRETEST_SCORE);
     safeStorage.removeItem(STORAGE_KEYS.POSTTEST_SCORE);
     safeStorage.removeItem(STORAGE_KEYS.MAX_SLIDE_VISITED);
+    safeStorage.removeItem(STORAGE_KEYS.INTRO_COMPLETED);
+    safeStorage.removeItem(STORAGE_KEYS.SLIDE6_STRUCTURES);
+    safeStorage.removeItem(STORAGE_KEYS.SLIDE11_FEATURES);
     if (slideKey) safeStorage.removeItem(slideKey);
+    if (introKey) safeStorage.removeItem(introKey);
     if (pretestKey) safeStorage.removeItem(pretestKey);
     if (posttestKey) safeStorage.removeItem(posttestKey);
+    if (slide6Key) safeStorage.removeItem(slide6Key);
+    if (slide11Key) safeStorage.removeItem(slide11Key);
   }
 }
 

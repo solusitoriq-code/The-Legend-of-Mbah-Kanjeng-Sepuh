@@ -1,7 +1,7 @@
 {
-  "name": "Media Pembelajaran Interaktif - Mbah Kanjeng Sepuh & Gunung Berapi",
-  "short_name": "Materi Interaktif",
-  "description": "Aplikasi Web Progresif (PWA) Interaktif Media Pembelajaran: Legenda Mbah Kanjeng Sepuh dan Petualangan Gunung Berapi",
+  "name": "The Legend of Mbah Kanjeng Sepuh",
+  "short_name": "The Legend of Mbah Kanjeng Sepuh",
+  "description": "Progressive Web App (PWA) Interactive Learning Media: The Legend of Mbah Kanjeng Sepuh & Volcanic Wonders",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
