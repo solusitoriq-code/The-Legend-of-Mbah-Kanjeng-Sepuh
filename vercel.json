@@ -4,7 +4,7 @@
   "buildCommand": null,
   "outputDirectory": null,
   "cleanUrls": true,
-  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^1} HEAD -- . ':!*.md' ':!.vercelignore'",
+  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^1} HEAD -- . ':!*.md' ':!.vercelignore' ':!.agents/**' ':!.vscode/**' ':!.gitignore'",
   "headers": [
     {
       "source": "/assets/(.*)",

@@ -1255,8 +1255,8 @@ class InteractivePresentationApp {
       }
     }
 
-    // Slide 11 or 12: Trigger Proximity Background Prefetch of 3D Model (AGENTS.md Compliant)
-    if (slideNumber === 11 || slideNumber === 12) {
+    // Slide 12 or 13: Trigger Proximity Background Preload of 3D Model (AGENTS.md Compliant)
+    if (slideNumber === 12 || slideNumber === 13) {
       this.prefetchSitusModel();
     }
 
@@ -3853,9 +3853,20 @@ class InteractivePresentationApp {
     const modelUrl = 'assets/situs_ks.glb';
 
     const executePrefetch = () => {
+      // 1. Inisialisasi src pada model-viewer agar engine Three.js langsung memuat dan menyiapkan model di background
+      const situsViewer = document.getElementById('situs-viewer');
+      if (situsViewer && !situsViewer.getAttribute('src')) {
+        situsViewer.setAttribute('src', situsViewer.dataset.src || modelUrl);
+      }
+
+      // 2. Tuntaskan unduhan ke Service Worker / Browser Cache dengan membaca blob
       if ('fetch' in window) {
         fetch(modelUrl, { priority: 'low' })
-          .then(() => console.log('[Prefetch] assets/situs_ks.glb cached quietly in background.'))
+          .then((res) => {
+            if (res.ok) return res.blob();
+            return null;
+          })
+          .then(() => console.log('[Prefetch] assets/situs_ks.glb fully loaded into cache.'))
           .catch(() => {});
       } else {
         const link = document.createElement('link');
@@ -3866,9 +3877,9 @@ class InteractivePresentationApp {
     };
 
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(executePrefetch, { timeout: 3500 });
+      requestIdleCallback(executePrefetch, { timeout: 1500 });
     } else {
-      setTimeout(executePrefetch, 800);
+      setTimeout(executePrefetch, 400);
     }
   }
 

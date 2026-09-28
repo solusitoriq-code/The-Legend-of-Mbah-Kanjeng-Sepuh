@@ -2,8 +2,10 @@ assets/slides/*.png
 assets/slides/video_slide_12.mp4
 assets/slides/*_old.webp
 assets/*_raw.glb
-.agents
+assets/*.jpeg
+.agents/
 .vscode/
+.gitignore
 AGENTS.md
 README.md
 node_modules/
