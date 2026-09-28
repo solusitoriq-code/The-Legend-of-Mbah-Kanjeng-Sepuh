@@ -170,6 +170,16 @@ class InteractivePresentationApp {
     this.slide11ViewedFeatures = new Set(dataService.getSlide11Progress());
 
     // HUD Buttons & Quick Menu
+    this.topHUD = document.getElementById('top-hud');
+    this.btnHUDMenuToggle = document.getElementById('btn-hud-menu-toggle');
+    this.hudActionsMenu = document.getElementById('hud-actions-menu');
+    this.btnSFX = document.getElementById('btn-toggle-sfx');
+    this.btnFullscreen = document.getElementById('btn-toggle-fullscreen');
+    this.btnFlipOrientation = document.getElementById('btn-flip-orientation');
+    this.btnInstallPWA = document.getElementById('btn-install-pwa');
+
+    // Toast
+    this.toast = document.getElementById('toast-notification');
 
     // Post-test Elements (Fase 5)
     this.quizModal = document.getElementById('quiz-modal-box');
@@ -4163,22 +4173,25 @@ class InteractivePresentationApp {
       });
     }
 
+    if (this.btnInstallPWA) {
+      this.btnInstallPWA.addEventListener('click', async () => {
+        if (!this.deferredPrompt) return;
+        sound.playPop();
+        this.deferredPrompt.prompt();
+        const choiceResult = await this.deferredPrompt.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          this.showToast('App installed.');
+        }
+        this.deferredPrompt = null;
+        this.btnInstallPWA.style.display = 'none';
+      });
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this.deferredPrompt = e;
       if (this.btnInstallPWA) {
-        this.btnInstallPWA.style.display = 'flex';
-        this.btnInstallPWA.addEventListener('click', () => {
-          sound.playPop();
-          this.deferredPrompt.prompt();
-          this.deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-              this.showToast('App installed.');
-            }
-            this.deferredPrompt = null;
-            this.btnInstallPWA.style.display = 'none';
-          });
-        });
+        this.btnInstallPWA.style.display = 'inline-flex';
       }
     });
 
