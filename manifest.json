@@ -1,18 +1,23 @@
 {
-  "name": "The Legend of Mbah Kanjeng Sepuh",
-  "short_name": "The Legend of Mbah Kanjeng Sepuh",
-  "description": "Progressive Web App (PWA) Interactive Learning Media: The Legend of Mbah Kanjeng Sepuh & Volcanic Wonders",
+  "name": "SI KANJENG SEPUH",
+  "short_name": "SI KANJENG SEPUH",
+  "description": "Interactive educational adventure game exploring the history and legend of Mbah Kanjeng Sepuh (Tumenggung Poespodiningrat) in Sidayu Gresik, featuring interactive quizzes, 3D AR relics, and student leaderboards.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
+  "theme_color": "#0f172a",
   "orientation": "landscape",
-  "categories": ["education", "books", "games"],
+  "categories": [
+    "education",
+    "games",
+    "books"
+  ],
   "icons": [
     {
       "src": "assets/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "assets/icons/icon-512.png",
@@ -21,9 +26,22 @@
       "purpose": "any maskable"
     },
     {
+      "src": "assets/icons/icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
       "src": "assets/icons/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

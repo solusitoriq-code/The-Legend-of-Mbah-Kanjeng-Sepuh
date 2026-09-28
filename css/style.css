@@ -5732,6 +5732,52 @@ body {
   transform: scale(1.05);
 }
 
+.splash-audio-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  user-select: none;
+}
+
+.splash-audio-btn svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.splash-audio-btn:hover {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.3);
+  color: #0284c7;
+  transform: scale(1.03);
+}
+
+.splash-audio-btn.is-muted {
+  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.splash-audio-btn.is-muted:hover {
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.3);
+  color: #475569;
+}
+
 @keyframes splashScaleIn {
   from {
     opacity: 0;
@@ -6083,6 +6129,48 @@ body {
   font-size: 1.05rem;
   font-weight: 600;
   color: #facc15;
+}
+
+.pretest-audio-btn {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.pretest-audio-btn svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.pretest-audio-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+  transform: scale(1.03);
+}
+
+.pretest-audio-btn.is-muted {
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.08);
+  opacity: 0.7;
+}
+
+.pretest-audio-btn.is-muted:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
 }
 
 .pretest-student-tag {
@@ -6703,6 +6791,15 @@ body {
     font-size: 13px;
   }
 
+  .splash-audio-btn {
+    top: 8px;
+    left: 8px;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
   .splash-badge {
     font-size: 0.68rem;
     padding: 3px 10px;
@@ -6804,6 +6901,13 @@ body {
 
   .pretest-counter {
     font-size: 0.75rem;
+  }
+
+  .pretest-audio-btn {
+    height: 22px;
+    padding: 0 7px;
+    font-size: 10px;
+    gap: 3px;
   }
 
   .pretest-student-tag {

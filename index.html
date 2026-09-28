@@ -7,15 +7,35 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <meta name="description"
-    content="Interactive PWA Learning Media - The Legend of Mbah Kanjeng Sepuh & Volcanic Wonders">
+    content="Interactive educational adventure game exploring the history and legend of Mbah Kanjeng Sepuh (Tumenggung Poespodiningrat) in Sidayu Gresik, featuring interactive quizzes, 3D AR relics, and student leaderboards.">
+  <meta name="application-name" content="SI KANJENG SEPUH">
+  <meta name="apple-mobile-web-app-title" content="SI KANJENG SEPUH">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <title>The Legend of Mbah Kanjeng Sepuh</title>
+  <title>SI KANJENG SEPUH</title>
+
+  <!-- Open Graph / Meta Sosial -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SI KANJENG SEPUH">
+  <meta property="og:description"
+    content="Interactive historical adventure game exploring the legend of Mbah Kanjeng Sepuh in Sidayu Gresik with quizzes, 3D AR relics, and leaderboards.">
+  <meta property="og:image" content="assets/icons/icon-512.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SI KANJENG SEPUH">
+  <meta name="twitter:description"
+    content="Interactive historical adventure game exploring the legend of Mbah Kanjeng Sepuh in Sidayu Gresik with quizzes, 3D AR relics, and leaderboards.">
+  <meta name="twitter:image" content="assets/icons/icon-512.png">
 
   <!-- PWA Manifest & Icons -->
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
-  <link rel="alternate icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
-  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
 
   <!-- Preconnect Google Fonts for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +48,7 @@
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=45">
+  <link rel="stylesheet" href="css/style.css?v=46">
 </head>
 
 <body>
@@ -39,10 +59,19 @@
     <!-- Splash Screen / Audio Unlock & NISN Validation Overlay -->
     <aside class="splash-overlay" id="splash-screen">
       <div class="splash-card">
+        <button type="button" class="splash-audio-btn" id="btn-splash-audio" title="Toggle Music" aria-label="Toggle Music">
+          <svg class="splash-audio-icon-on" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+          <svg class="splash-audio-icon-off" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display: none;">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27l4.73 4.73H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+          </svg>
+          <span class="splash-audio-label">Music</span>
+        </button>
         <button type="button" class="splash-close-btn" id="btn-close-splash" title="Close" aria-label="Close"
           style="display: none;">✕</button>
         <span class="splash-badge">Interactive Learning Media</span>
-        <h1 class="splash-title">The Legend of Mbah Kanjeng Sepuh</h1>
+        <h1 class="splash-title">SI KANJENG SEPUH</h1>
         <p class="splash-subtitle">Enter your Student ID (NIS or NISN) to begin</p>
 
         <!-- Form Input & Validasi NIS/NISN -->
@@ -71,8 +100,8 @@
             Start Pretest ➔
           </button>
           <button type="button" class="splash-btn-retake" id="btn-retake-pretest" style="display: none;"
-            title="Pretest Lagi">
-            Pretest Lagi ↺
+            title="Retake Pretest">
+            Retake Pretest ↺
           </button>
         </div>
       </div>
@@ -89,6 +118,15 @@
             <div class="pretest-meta-info">
               <span class="pretest-badge">Diagnostic Pretest</span>
               <span class="pretest-counter" id="pretest-counter">Question 1 of 5</span>
+              <button type="button" class="pretest-audio-btn" id="btn-pretest-audio" title="Toggle Music" aria-label="Toggle Music">
+                <svg class="pretest-audio-icon-on" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+                <svg class="pretest-audio-icon-off" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display: none;">
+                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27l4.73 4.73H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+                <span class="pretest-audio-label">Music</span>
+              </button>
             </div>
             <div class="pretest-student-tag" id="pretest-student-tag">-</div>
           </div>
@@ -1811,7 +1849,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <!-- Application Logic Modules -->
-  <script type="module" src="js/app.js?v=44"></script>
+  <script type="module" src="js/app.js?v=46"></script>
 
 </body>
 

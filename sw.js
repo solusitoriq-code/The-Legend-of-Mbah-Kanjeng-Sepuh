@@ -1,21 +1,28 @@
-const CACHE_NAME = 'materi-interaktif-v45';
+const CACHE_NAME = 'materi-interaktif-v47';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
-  './css/style.css?v=45',
+  './css/style.css?v=46',
   './js/app.js',
-  './js/app.js?v=44',
+  './js/app.js?v=46',
   './js/audio.js',
-  './js/audio.js?v=20',
+  './js/audio.js?v=21',
   './js/data-service.js',
   './js/data-service.js?v=20',
   './js/quiz-data.js',
   './js/quiz-data.js?v=20',
   './data/materi_evaluasi.json',
   './manifest.json',
+  './favicon.ico',
+  './assets/icons/favicon-32x32.png',
+  './assets/icons/favicon-48x48.png',
+  './assets/icons/apple-touch-icon.png',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
+  './assets/icons/icon-192.webp',
+  './assets/icons/icon-512.webp',
+  './assets/icons/icon-logo.png',
   './assets/icons/icon.svg'
 ];
 

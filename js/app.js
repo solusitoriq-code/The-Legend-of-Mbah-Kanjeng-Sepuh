@@ -1,6 +1,6 @@
-import { sound } from './audio.js?v=20';
+import { sound } from './audio.js?v=21';
 import { dataService } from './data-service.js?v=20';
-import { FORMATIVE_GAME, GENERIC_STRUCTURES, LANGUAGE_FEATURES } from './quiz-data.js?v=20';
+import { GENERIC_STRUCTURES, LANGUAGE_FEATURES } from './quiz-data.js?v=20';
 
 // Metadata for Slide Navigator Table of Contents
 const SLIDE_DIRECTORY = [
@@ -90,6 +90,7 @@ class InteractivePresentationApp {
     this.splashOverlay = document.getElementById('splash-screen');
     this.btnStartSplash = document.getElementById('btn-start-splash');
     this.btnCloseSplash = document.getElementById('btn-close-splash');
+    this.btnSplashAudio = document.getElementById('btn-splash-audio');
     this.inputNISN = document.getElementById('input-nisn');
     this.btnCheckNISN = document.getElementById('btn-check-nisn');
     this.feedbackNISN = document.getElementById('splash-nisn-feedback');
@@ -168,39 +169,7 @@ class InteractivePresentationApp {
     this.slide11Count = document.getElementById('slide11-count');
     this.slide11ViewedFeatures = new Set(dataService.getSlide11Progress());
 
-    // Glosarium Modal
-    this.glosariumModal = document.getElementById('glosarium-modal');
-    this.btnOpenGlosarium = document.getElementById('btn-menu-glosarium');
-    this.btnCloseGlosarium = document.getElementById('btn-close-glosarium');
-    this.glosariumSearch = document.getElementById('glosarium-search');
-    this.glosariumGrid = document.getElementById('glosarium-items-grid');
-
-    // Glossary Vocabulary Slide 16 — tabel dirender saat masuk slide
-    this.glossaryTableBody = document.getElementById('glossary-table-body');
-    this.btnSlide16Glossary = null;  // tidak digunakan lagi (sekarang slide 16 adalah halaman Glosarium)
-    this.glossaryModalOverlay = null;
-    this.btnGlossaryClose = null;
-
     // HUD Buttons & Quick Menu
-    this.topHUD = document.getElementById('top-hud');
-    this.btnHUDMenuToggle = document.getElementById('btn-hud-menu-toggle');
-    this.hudActionsMenu = document.getElementById('hud-actions-menu');
-    this.btnSFX = document.getElementById('btn-toggle-sfx');
-    this.btnFullscreen = document.getElementById('btn-toggle-fullscreen');
-    this.btnFlipOrientation = document.getElementById('btn-flip-orientation');
-    this.btnInstallPWA = document.getElementById('btn-install-pwa');
-
-    // Toast
-    this.toast = document.getElementById('toast-notification');
-
-    // Formative Game Elements
-    this.gameIntroScreen = document.getElementById('game-intro-screen');
-    this.gamePlayScreen = document.getElementById('game-play-screen');
-    this.gameRoundIndicator = document.getElementById('game-round-indicator');
-    this.gameVerbPrompt = document.getElementById('game-verb-prompt');
-    this.gameSentenceText = document.getElementById('game-sentence-text');
-    this.gameOptionsContainer = document.getElementById('game-options-container');
-    this.btnStartVerbGame = document.getElementById('btn-start-verb-game');
 
     // Post-test Elements (Fase 5)
     this.quizModal = document.getElementById('quiz-modal-box');
@@ -269,6 +238,7 @@ class InteractivePresentationApp {
     // Pretest Elements (Fase 3)
     this.pretestModal = document.getElementById('pretest-modal');
     this.pretestQuizView = document.getElementById('pretest-quiz-view');
+    this.btnPretestAudio = document.getElementById('btn-pretest-audio');
     this.pretestCounter = document.getElementById('pretest-counter');
     this.pretestProgressFill = document.getElementById('pretest-progress-fill');
     this.pretestStudentTag = document.getElementById('pretest-student-tag');
@@ -298,6 +268,7 @@ class InteractivePresentationApp {
     // Splash Screen Start & Unlock Audio (Fase 2 & Fase 3)
     if (this.btnStartSplash && this.splashOverlay) {
       this.btnStartSplash.addEventListener('click', () => {
+        sound.stopBGM();
         sound.init();
         sound.playSuccess();
         this.requestLandscapeLock();
@@ -330,6 +301,7 @@ class InteractivePresentationApp {
     // Tombol Kerjakan Ulang Pretest di Splash Screen
     if (this.btnRetakePretest && this.splashOverlay) {
       this.btnRetakePretest.addEventListener('click', () => {
+        sound.stopBGM();
         sound.init();
         sound.playClick();
         this.requestLandscapeLock();
@@ -338,6 +310,26 @@ class InteractivePresentationApp {
           this.splashOverlay.style.display = 'none';
           this.startPretest();
         }, 400);
+      });
+    }
+
+    // Tombol Toggle Musik Latar Splash Screen
+    if (this.btnSplashAudio) {
+      this.btnSplashAudio.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isMuted = sound.toggleMute(true, 'splash');
+        this.updateSplashAudioButton(isMuted);
+        this.updateSFXButton(isMuted);
+      });
+    }
+
+    // Tombol Toggle Musik Latar Pretest
+    if (this.btnPretestAudio) {
+      this.btnPretestAudio.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isMuted = sound.toggleMute(true, 'pretest');
+        this.updatePretestAudioButton(isMuted);
+        this.updateSFXButton(isMuted);
       });
     }
 
@@ -847,14 +839,6 @@ class InteractivePresentationApp {
       });
     }
 
-    // Slide 10 Formative Game
-    if (this.btnStartVerbGame) {
-      this.btnStartVerbGame.addEventListener('click', () => {
-        sound.playPop();
-        this.startFormativeGame();
-      });
-    }
-
     // Slide 17 Exit App — btn-restart-app ditangani via delegation (elemen ada di slide 17)
     document.addEventListener('click', (e) => {
       if (e.target.closest('#btn-restart-app')) {
@@ -875,29 +859,6 @@ class InteractivePresentationApp {
         if (e.target === this.infoModal) {
           this.closeInfoModal();
         }
-      });
-    }
-
-    // Tombol Glosarium slide 3 menggunakan data-goto="16" — navigasi ditangani oleh delegation global.
-    // Handler khusus tidak diperlukan; modal Glosarium (Vocabulary) dibuka dari tombol di slide 16.
-
-    if (this.btnCloseGlosarium) {
-      this.btnCloseGlosarium.addEventListener('click', () => {
-        this.closeGlosarium();
-      });
-    }
-
-    if (this.glosariumModal) {
-      this.glosariumModal.addEventListener('click', (e) => {
-        if (e.target === this.glosariumModal) {
-          this.closeGlosarium();
-        }
-      });
-    }
-
-    if (this.glosariumSearch) {
-      this.glosariumSearch.addEventListener('input', () => {
-        this.renderGlosariumList(this.glosariumSearch.value);
       });
     }
 
@@ -932,8 +893,13 @@ class InteractivePresentationApp {
 
     // Top HUD Actions
     this.btnSFX.addEventListener('click', () => {
-      const isMuted = sound.toggleMute();
+      const isSplashVisible = this.splashOverlay && this.splashOverlay.style.display !== 'none' && !this.splashOverlay.classList.contains('fade-out');
+      const isPretestVisible = this.pretestModal && this.pretestModal.style.display !== 'none' && !this.pretestModal.classList.contains('fade-out');
+      const preferredMode = isPretestVisible ? 'pretest' : (isSplashVisible ? 'splash' : null);
+      const isMuted = sound.toggleMute(Boolean(isSplashVisible || isPretestVisible), preferredMode);
       this.updateSFXButton(isMuted);
+      this.updateSplashAudioButton(isMuted);
+      this.updatePretestAudioButton(isMuted);
       if (isMuted) {
         if (this.videoSlide1) this.videoSlide1.muted = true;
         if (this.videoSlide2) this.videoSlide2.muted = true;
@@ -1012,7 +978,6 @@ class InteractivePresentationApp {
         if (this.currentSlide === 15 && (this.posttestQuizView?.style.display === 'flex' || this.quizResultScreen?.style.display === 'flex')) {
           this.closePosttest();
         }
-        if (this.glosariumModal) this.glosariumModal.style.display = 'none';
       } else if (e.key === 'Home') {
         this.goToSlide(3);
       }
@@ -1517,6 +1482,13 @@ class InteractivePresentationApp {
       this.splashOverlay.classList.remove('fade-out');
     });
 
+    if (!sound.muted) {
+      sound.startGamelanBGM();
+      this.updateSplashAudioButton(false);
+    } else {
+      this.updateSplashAudioButton(true);
+    }
+
     // Pastikan data siswa di-restore dari storage jika memori kosong
     let currentStudent = dataService.getCurrentStudent();
     if (!currentStudent) {
@@ -1554,6 +1526,7 @@ class InteractivePresentationApp {
 
   closeSplash() {
     if (!this.splashOverlay) return;
+    sound.stopBGM();
     this.splashOverlay.classList.add('fade-out');
     setTimeout(() => {
       this.splashOverlay.style.display = 'none';
@@ -1920,18 +1893,24 @@ class InteractivePresentationApp {
 
       try {
         this.ytPlayerSlide12 = new window.YT.Player('youtube-player-slide12', {
-          videoId: '2sJGVx6b27k',
+          videoId: 'cDE2hedEz5M',
           playerVars: {
             playsinline: 1,
             rel: 0,
             modestbranding: 1,
             controls: 1,
             enablejsapi: 1,
-            origin: window.location.origin
+            origin: window.location.origin,
+            vq: 'hd720'
           },
           events: {
             'onReady': () => {
               this.isYtPlayerReady = true;
+              try {
+                if (typeof this.ytPlayerSlide12.setPlaybackQuality === 'function') {
+                  this.ytPlayerSlide12.setPlaybackQuality('hd720');
+                }
+              } catch (e) { }
               if (this.modalVideoSlide12 && this.modalVideoSlide12.style.display === 'flex') {
                 try {
                   this.ytPlayerSlide12.playVideo();
@@ -1948,6 +1927,11 @@ class InteractivePresentationApp {
                 this.onSlide12VideoEnded();
                 this.stopYtProgressTracking();
               } else if (state === playingState) {
+                try {
+                  if (typeof this.ytPlayerSlide12.setPlaybackQuality === 'function') {
+                    this.ytPlayerSlide12.setPlaybackQuality('hd720');
+                  }
+                } catch (e) { }
                 this.startYtProgressTracking();
               } else {
                 this.stopYtProgressTracking();
@@ -2090,84 +2074,6 @@ class InteractivePresentationApp {
       } catch (err) { }
     }
     this.modalVideoSlide12.style.display = 'none';
-  }
-
-  openGlosarium() {
-    if (!this.glosariumModal) return;
-    sound.playPop();
-    this.renderGlosariumList('');
-    if (this.glosariumSearch) this.glosariumSearch.value = '';
-    this.glosariumModal.style.display = 'flex';
-  }
-
-  closeGlosarium() {
-    if (!this.glosariumModal) return;
-    sound.playClick();
-    this.glosariumModal.style.display = 'none';
-  }
-
-  async openGlossaryModal() {
-    if (!this.glossaryModalOverlay) return;
-
-    // Tampilkan overlay loading state
-    this.glossaryModalOverlay.removeAttribute('hidden');
-
-    if (this.glossaryTableBody && this.glossaryTableBody.innerHTML.includes('Loading')) {
-      // Fetch data hanya sekali — jika sudah dirender, tidak perlu ulang
-      try {
-        const data = await dataService.getGlossary();
-        this.renderGlossaryTable(data);
-      } catch (err) {
-        if (this.glossaryTableBody) {
-          this.glossaryTableBody.innerHTML = `<tr><td colspan="7" class="glossary-loading">Failed to load glossary data. Please check your connection.</td></tr>`;
-        }
-      }
-    }
-
-    // Tutup dengan tombol Escape
-    this._glossaryEscHandler = (e) => {
-      if (e.key === 'Escape') this.closeGlossaryModal();
-    };
-    document.addEventListener('keydown', this._glossaryEscHandler);
-  }
-
-  closeGlossaryModal() {
-    if (!this.glossaryModalOverlay) return;
-    this.glossaryModalOverlay.setAttribute('hidden', '');
-    if (this._glossaryEscHandler) {
-      document.removeEventListener('keydown', this._glossaryEscHandler);
-      this._glossaryEscHandler = null;
-    }
-  }
-
-  renderGlossaryTable(data) {
-    if (!this.glossaryTableBody) return;
-    if (!Array.isArray(data) || data.length === 0) {
-      this.glossaryTableBody.innerHTML = `<tr><td colspan="7" class="glossary-loading">No data available.</td></tr>`;
-      return;
-    }
-
-    const rows = data.map((item, idx) => {
-      const no = item.No ?? (idx + 1);
-      const kata = item.Kata || '';
-      const pron = item.Pronounsiasi || '';
-      const jenis = item.Jenis_Kata || '';
-      const en = item.English_Meaning || '';
-      const id = item.Arti_ID || '';
-      const ex = item.Contoh_Kalimat || '';
-      const badge = jenis ? `<span class="glossary-jenis-badge">${jenis}</span>` : '';
-      return `<tr>
-        <td class="col-no">${no}</td>
-        <td class="col-kata">${kata}</td>
-        <td class="col-pron">${pron}</td>
-        <td class="col-jenis">${badge}</td>
-        <td class="col-en">${en}</td>
-        <td class="col-id">${id}</td>
-        <td class="col-ex">${ex}</td>
-      </tr>`;
-    });
-
-    this.glossaryTableBody.innerHTML = rows.join('');
   }
 
   /**
@@ -2368,40 +2274,6 @@ class InteractivePresentationApp {
     }
   }
 
-
-
-  renderGlosariumList(searchTerm = '') {
-    if (!this.glosariumGrid) return;
-    this.glosariumGrid.innerHTML = '';
-
-    const clean = searchTerm.trim().toLowerCase();
-    const filtered = clean
-      ? GLOSARIUM_DATA.filter(item =>
-        item.term.toLowerCase().includes(clean) ||
-        item.def.toLowerCase().includes(clean) ||
-        item.category.toLowerCase().includes(clean)
-      )
-      : GLOSARIUM_DATA;
-
-    if (filtered.length === 0) {
-      this.glosariumGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 24px;">Tidak ditemukan istilah yang sesuai.</div>';
-      return;
-    }
-
-    filtered.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'glosarium-card';
-      card.innerHTML = `
-        <div class="glosarium-card-term">
-          <span>${item.term}</span>
-          <span class="glosarium-card-category">${item.category}</span>
-        </div>
-        <div class="glosarium-card-def">${item.def}</div>
-      `;
-      this.glosariumGrid.appendChild(card);
-    });
-  }
-
   showToast(message) {
     this.toast.textContent = message;
     this.toast.classList.add('show');
@@ -2419,12 +2291,27 @@ class InteractivePresentationApp {
     this.inputNISN.value = '';
     this.inputNISN.placeholder = '';
 
+    // Auto-start music specifically upon touching or focusing the NISN input box
+    const startMusicOnInputTouch = () => {
+      const isSplashVisible = this.splashOverlay && this.splashOverlay.style.display !== 'none' && !this.splashOverlay.classList.contains('fade-out');
+      if (isSplashVisible && !sound.muted && !sound.bgmPlaying) {
+        sound.startGamelanBGM();
+        this.updateSplashAudioButton(false);
+      }
+    };
+
+    ['pointerdown', 'touchstart', 'focus', 'click'].forEach(evtName => {
+      this.inputNISN.addEventListener(evtName, startMusicOnInputTouch, { passive: true });
+    });
+
     this.btnCheckNISN.addEventListener('click', () => {
+      startMusicOnInputTouch();
       sound.playClick();
       this.handleCheckNISN();
     });
 
     this.inputNISN.addEventListener('keydown', (e) => {
+      startMusicOnInputTouch();
       if (e.key === 'Enter') {
         e.preventDefault();
         sound.playClick();
@@ -2434,6 +2321,7 @@ class InteractivePresentationApp {
 
     // Reset tombol jika pengguna mengubah isi input (input NIS/NISN baru)
     this.inputNISN.addEventListener('input', () => {
+      startMusicOnInputTouch();
       const val = this.inputNISN.value.trim();
 
       const currentSaved = dataService.getCurrentStudent();
@@ -2679,6 +2567,48 @@ class InteractivePresentationApp {
     }
   }
 
+  updateSplashAudioButton(isMuted) {
+    if (!this.btnSplashAudio) return;
+    const iconOn = this.btnSplashAudio.querySelector('.splash-audio-icon-on');
+    const iconOff = this.btnSplashAudio.querySelector('.splash-audio-icon-off');
+    const label = this.btnSplashAudio.querySelector('.splash-audio-label');
+
+    if (isMuted) {
+      this.btnSplashAudio.classList.add('is-muted');
+      if (iconOn) iconOn.style.display = 'none';
+      if (iconOff) iconOff.style.display = 'block';
+      if (label) label.textContent = 'Muted';
+      this.btnSplashAudio.setAttribute('title', 'Unmute Music');
+    } else {
+      this.btnSplashAudio.classList.remove('is-muted');
+      if (iconOn) iconOn.style.display = 'block';
+      if (iconOff) iconOff.style.display = 'none';
+      if (label) label.textContent = 'Music';
+      this.btnSplashAudio.setAttribute('title', 'Mute Music');
+    }
+  }
+
+  updatePretestAudioButton(isMuted) {
+    if (!this.btnPretestAudio) return;
+    const iconOn = this.btnPretestAudio.querySelector('.pretest-audio-icon-on');
+    const iconOff = this.btnPretestAudio.querySelector('.pretest-audio-icon-off');
+    const label = this.btnPretestAudio.querySelector('.pretest-audio-label');
+
+    if (isMuted) {
+      this.btnPretestAudio.classList.add('is-muted');
+      if (iconOn) iconOn.style.display = 'none';
+      if (iconOff) iconOff.style.display = 'block';
+      if (label) label.textContent = 'Muted';
+      this.btnPretestAudio.setAttribute('title', 'Unmute Music');
+    } else {
+      this.btnPretestAudio.classList.remove('is-muted');
+      if (iconOn) iconOn.style.display = 'block';
+      if (iconOff) iconOff.style.display = 'none';
+      if (label) label.textContent = 'Music';
+      this.btnPretestAudio.setAttribute('title', 'Mute Music');
+    }
+  }
+
   updateFullscreenButton(isFullscreen) {
     if (!this.btnFullscreen) return;
     if (isFullscreen) {
@@ -2812,68 +2742,6 @@ class InteractivePresentationApp {
     this.showToast(`Screen rotation changed to ${this.portraitRotationAngle}°`);
   }
 
-  // --- Slide 10: Formative Mini-Game ---
-  startFormativeGame() {
-    this.gameRound = 0;
-    this.gameScore = 0;
-    this.gameIntroScreen.style.display = 'none';
-    this.gamePlayScreen.style.display = 'flex';
-    this.renderFormativeRound();
-  }
-
-  renderFormativeRound() {
-    if (this.gameRound >= FORMATIVE_GAME.length) {
-      sound.playFanfare();
-      this.gamePlayScreen.innerHTML = `
-        <div style="font-family:'Fredoka', cursive; font-size:1.6rem; color:#38bdf8; margin-bottom:6px;">Game Complete</div>
-        <p style="color:#cbd5e1; margin-bottom:18px;">Your score: ${this.gameScore} / ${FORMATIVE_GAME.length}</p>
-        <button class="game-start-btn" id="btn-replay-game">Play Again</button>
-      `;
-      document.getElementById('btn-replay-game').addEventListener('click', () => {
-        this.startFormativeGame();
-      });
-      return;
-    }
-
-    const current = FORMATIVE_GAME[this.gameRound];
-    this.gameRoundIndicator.textContent = `Round ${this.gameRound + 1} / ${FORMATIVE_GAME.length}`;
-    this.gameVerbPrompt.textContent = current.present;
-    this.gameSentenceText.textContent = current.sentence;
-
-    this.gameOptionsContainer.innerHTML = '';
-    current.options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'game-opt-btn';
-      btn.textContent = opt;
-      btn.addEventListener('click', () => this.handleFormativeAnswer(btn, opt, current.correct));
-      this.gameOptionsContainer.appendChild(btn);
-    });
-  }
-
-  handleFormativeAnswer(clickedBtn, selectedOption, correctOption) {
-    const buttons = this.gameOptionsContainer.querySelectorAll('.game-opt-btn');
-    buttons.forEach(b => b.disabled = true);
-
-    if (selectedOption === correctOption) {
-      sound.playSuccess();
-      clickedBtn.classList.add('correct');
-      this.gameScore++;
-    } else {
-      sound.playError();
-      clickedBtn.classList.add('wrong');
-      buttons.forEach(b => {
-        if (b.textContent === correctOption) {
-          b.classList.add('correct');
-        }
-      });
-    }
-
-    setTimeout(() => {
-      this.gameRound++;
-      this.renderFormativeRound();
-    }, 1400);
-  }
-
   // =========================================================================
   // FASE 3: MODUL & ENGINE PRETEST
   // =========================================================================
@@ -2909,6 +2777,14 @@ class InteractivePresentationApp {
       // Force reflow for CSS animation
       void this.pretestModal.offsetWidth;
       this.pretestModal.classList.add('active');
+    }
+
+    // Auto-play slow relaxing instrumental music for Pretest
+    if (!sound.muted) {
+      sound.startPretestBGM();
+      this.updatePretestAudioButton(false);
+    } else {
+      this.updatePretestAudioButton(true);
     }
 
     this.renderPretestQuestion();
@@ -3066,6 +2942,7 @@ class InteractivePresentationApp {
   }
 
   closePretestAndStartLearning() {
+    sound.stopBGM();
     sound.playPop();
 
     if (this.pretestModal) {

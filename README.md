@@ -1,4 +1,4 @@
-# The Legend of Mbah Kanjeng Sepuh - Media Pembelajaran Interaktif (PWA)
+# SI KANJENG SEPUH - Game Media Pembelajaran Interaktif (PWA)
 
 Aplikasi Progressive Web App (PWA) materi pembelajaran sejarah berbasis slide interaktif dengan video latar, audio synthesizer native Web Audio API, simulasi kanvas, serta evaluasi kuis otomatis (Pretest & Posttest) yang terintegrasi dengan kalkulasi N-Gain dan leaderboard.
 

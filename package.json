@@ -2,6 +2,7 @@
   "scripts": {
     "start": "node server.js",
     "convert:webp": "node scripts/convert-webp.js",
+    "generate:icons": "node scripts/generate-app-icons.js",
     "sync:data": "node scripts/sync-excel-to-json.js",
     "sync:excel": "node scripts/sync-excel-to-json.js --to-excel",
     "update:leaderboard": "node scripts/update-leaderboard.js"
