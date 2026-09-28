@@ -5546,9 +5546,25 @@ body {
   padding: 24px 28px;
   max-width: 520px;
   width: 90%;
+  max-height: calc(100% - 20px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   color: #fff;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.info-modal-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.info-modal-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.info-modal-card::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 @keyframes popIn {
@@ -5666,12 +5682,28 @@ body {
   padding: 40px 32px;
   max-width: 520px;
   width: 90%;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   text-align: center;
   box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   animation: splashScaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.splash-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.splash-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.splash-card::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2);
+  border-radius: 4px;
 }
 
 .splash-close-btn {
@@ -6228,7 +6260,19 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   animation: fadeInDown 0.3s ease;
+}
+
+.pretest-result-view::-webkit-scrollbar {
+  width: 5px;
+}
+
+.pretest-result-view::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 .pretest-result-title {
@@ -6634,4 +6678,257 @@ body {
   opacity: 0.45;
   cursor: not-allowed;
   filter: grayscale(0.8);
+}
+
+/* ==========================================================================
+   Dialog & Modal Mobile Responsiveness (Min. 375 x 667 px & Short Viewports)
+   ========================================================================== */
+@media screen and (max-height: 540px), screen and (max-width: 640px) {
+  /* Splash Overlay & NIS Dialog */
+  .splash-overlay {
+    padding: 10px;
+  }
+
+  .splash-card {
+    padding: 16px 20px;
+    max-width: 480px;
+    border-radius: var(--radius-md);
+  }
+
+  .splash-close-btn {
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+
+  .splash-badge {
+    font-size: 0.68rem;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+    letter-spacing: 0.8px;
+  }
+
+  .splash-title {
+    font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+
+  .splash-subtitle {
+    font-size: 0.82rem;
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+
+  .splash-nisn-box {
+    margin-bottom: 8px;
+    max-width: 380px;
+  }
+
+  .splash-input-group {
+    padding: 3px 4px;
+    gap: 6px;
+  }
+
+  .splash-input-nisn {
+    padding: 6px 10px;
+    font-size: 0.88rem;
+  }
+
+  .splash-btn-check {
+    padding: 6px 14px;
+    font-size: 0.82rem;
+  }
+
+  .splash-feedback {
+    min-height: 16px;
+    font-size: 0.76rem;
+    margin-top: 4px;
+  }
+
+  .splash-student-card {
+    padding: 8px 14px;
+    margin-bottom: 10px;
+    max-width: 380px;
+  }
+
+  .student-card-header {
+    font-size: 0.65rem;
+    margin-bottom: 2px;
+  }
+
+  .student-card-name {
+    font-size: 1.05rem;
+    margin-bottom: 2px;
+  }
+
+  .student-card-meta {
+    font-size: 0.78rem;
+    gap: 12px;
+  }
+
+  .splash-action-group {
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .splash-btn-start {
+    padding: 8px 20px;
+    font-size: 0.88rem;
+  }
+
+  .splash-btn-retake {
+    padding: 8px 16px;
+    font-size: 0.82rem;
+  }
+
+  /* Pretest Modal Compact */
+  .pretest-modal-overlay {
+    padding: 10px;
+  }
+
+  .pretest-modal-card {
+    max-height: 94%;
+  }
+
+  .pretest-header {
+    padding: 10px 16px;
+  }
+
+  .pretest-badge {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+  }
+
+  .pretest-counter {
+    font-size: 0.75rem;
+  }
+
+  .pretest-student-tag {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    max-width: 160px;
+  }
+
+  .pretest-body {
+    padding: 12px 16px;
+  }
+
+  .pretest-question-box {
+    margin-bottom: 10px;
+  }
+
+  .pretest-question-text {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .pretest-options-list {
+    gap: 8px;
+  }
+
+  .pretest-opt-btn {
+    padding: 8px 12px;
+    font-size: 0.84rem;
+    gap: 8px;
+  }
+
+  .pretest-opt-letter {
+    width: 24px;
+    height: 24px;
+    font-size: 0.78rem;
+  }
+
+  .pretest-footer {
+    padding: 8px 16px;
+  }
+
+  .pretest-hint {
+    font-size: 0.74rem;
+  }
+
+  .pretest-next-btn {
+    font-size: 0.85rem;
+    padding: 8px 16px;
+  }
+
+  /* Pretest Result Screen */
+  .pretest-result-view {
+    padding: 14px 18px;
+  }
+
+  .pretest-result-title {
+    font-size: 1.25rem;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  .pretest-result-desc {
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
+
+  .pretest-score-box {
+    padding: 8px 18px;
+    margin-bottom: 12px;
+  }
+
+  .pretest-score-num {
+    font-size: 2rem;
+    margin-bottom: 2px;
+  }
+
+  .pretest-score-sub {
+    font-size: 0.78rem;
+  }
+
+  .pretest-finish-btn {
+    font-size: 0.88rem;
+    padding: 8px 22px;
+  }
+
+  /* Info / Vocabulary Modal */
+  .info-modal-overlay {
+    padding: 10px;
+  }
+
+  .info-modal-card {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .info-modal-top {
+    margin-bottom: 8px;
+  }
+
+  .info-modal-heading {
+    font-size: 1.15rem;
+  }
+
+  .info-modal-pill {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
+
+  .info-modal-audio-row {
+    margin-bottom: 8px;
+  }
+
+  .info-modal-speaker {
+    padding: 5px 12px;
+    font-size: 0.76rem;
+  }
+
+  .info-modal-description {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    margin-bottom: 10px;
+  }
+
+  .info-modal-example-box {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
 }
