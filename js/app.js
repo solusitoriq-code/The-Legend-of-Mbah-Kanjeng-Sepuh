@@ -18,14 +18,21 @@ const SLIDE_DIRECTORY = [
   { id: 13, title: 'Story: Raden Suryodiningrat' },
   { id: 14, title: 'Education: Volcanic Eruptions' },
   { id: 15, title: 'Evaluation Quiz (Post-test)' },
-  { id: 16, title: 'Closing & Developer Profile' }
+  { id: 16, title: 'Glossary (Vocabulary)' },
+  { id: 17, title: 'Closing' }
 ];
 
 class InteractivePresentationApp {
   constructor() {
     this.currentSlide = 1;
-    this.totalSlides = 16;
+    this.totalSlides = 17; // slide 16 = Glosarium, slide 17 = Closing
     this.deferredPrompt = null;
+
+    // Slide 16 Glosarium Single Card Slider State
+    this.glossaryItems = [];
+    this.glossaryCurrentIndex = 0;
+    this.glossaryAudioState = 'idle'; // 'idle' | 'playing' | 'paused'
+    this.glossaryUtterance = null;
 
     // Pelacak Progres Materi (Fase 4 Guided Navigation)
     this.maxSlideVisited = dataService.getMaxSlideVisited();
@@ -168,6 +175,12 @@ class InteractivePresentationApp {
     this.glosariumSearch = document.getElementById('glosarium-search');
     this.glosariumGrid = document.getElementById('glosarium-items-grid');
 
+    // Glossary Vocabulary Slide 16 — tabel dirender saat masuk slide
+    this.glossaryTableBody = document.getElementById('glossary-table-body');
+    this.btnSlide16Glossary = null;  // tidak digunakan lagi (sekarang slide 16 adalah halaman Glosarium)
+    this.glossaryModalOverlay = null;
+    this.btnGlossaryClose = null;
+
     // HUD Buttons & Quick Menu
     this.topHUD = document.getElementById('top-hud');
     this.btnHUDMenuToggle = document.getElementById('btn-hud-menu-toggle');
@@ -268,6 +281,14 @@ class InteractivePresentationApp {
     this.pretestScoreDetail = document.getElementById('pretest-score-detail');
     this.btnPretestFinish = document.getElementById('btn-pretest-finish');
     this.btnRetakePretest = document.getElementById('btn-retake-pretest');
+
+    // Slide 16 Glosarium Single Card Slider Elements
+    this.slide16Container = document.getElementById('slide16-glossary-container');
+    this.btnSlide16Prev = document.getElementById('btn-slide16-prev-card');
+    this.btnSlide16Next = document.getElementById('btn-slide16-next-card');
+    this.btnSlide16Audio = document.getElementById('btn-slide16-audio');
+    this.btnSlide16Phonetic = document.getElementById('btn-slide16-phonetic');
+    this.slide16DotsContainer = document.getElementById('slide16-dots-container');
   }
 
   bindEvents() {
@@ -285,16 +306,12 @@ class InteractivePresentationApp {
           this.splashOverlay.style.display = 'none';
           const savedPretest = dataService.getPretestScore();
           if (savedPretest !== null && savedPretest !== undefined) {
-            // Siswa sudah memiliki skor pretest, langsung ke slide 3 jika intro sudah dibuka
-            const targetSlide = this.hasVisitedIntro() ? 3 : 1;
-            this.goToSlide(targetSlide, false);
-            if (targetSlide === 1 && this.videoSlide1) {
-              this.videoSlide1.muted = sound.muted;
-              this.playSlideVideo(this.videoSlide1);
-            }
+            // Siswa sudah memiliki skor pretest dan memilih "Next ke Slide 3"
+            dataService.setIntroCompleted();
+            this.goToSlide(3, false);
             const student = dataService.getCurrentStudent();
             if (student) {
-              this.showToast(`Welcome back, ${student.Nama}.`);
+              this.showToast(`Lanjut ke Slide 3 (Skor Pretest: ${savedPretest}).`);
             }
           } else {
             // Belum mengerjakan pretest, luncurkan modul Pretest
@@ -654,7 +671,7 @@ class InteractivePresentationApp {
           e.preventDefault();
           e.stopPropagation();
           sound.playError();
-          this.showToast('Complete the Post-test evaluation before proceeding to Slide 16.');
+          this.showToast('Complete the Post-test evaluation before proceeding to Slide 16 (Glossary).');
         }
       }, true);
     }
@@ -665,7 +682,7 @@ class InteractivePresentationApp {
           e.preventDefault();
           e.stopPropagation();
           sound.playError();
-          this.showToast('Complete the Post-test evaluation before proceeding to Slide 16.');
+          this.showToast('Complete the Post-test evaluation before proceeding to Slide 16 (Glossary).');
         }
       }, true);
     }
@@ -720,7 +737,7 @@ class InteractivePresentationApp {
       this.btnFinishQuiz.addEventListener('click', () => {
         sound.playSuccess();
         this.closePosttest();
-        this.goToSlide(16);
+        this.goToSlide(17);
       });
     }
 
@@ -758,6 +775,66 @@ class InteractivePresentationApp {
       });
     }
 
+    // Slide 16 Glosarium Single Card Slider Navigation & Audio Events
+    if (this.btnSlide16Prev) {
+      this.btnSlide16Prev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.playPop();
+        this.prevGlossaryCard();
+      });
+    }
+
+    if (this.btnSlide16Next) {
+      this.btnSlide16Next.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.playPop();
+        this.nextGlossaryCard();
+      });
+    }
+
+    if (this.btnSlide16Audio) {
+      this.btnSlide16Audio.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleGlossaryAudio();
+      });
+    }
+
+    if (this.btnSlide16Phonetic) {
+      this.btnSlide16Phonetic.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleGlossaryAudio();
+      });
+    }
+
+    // Touch swipe support on Slide 16
+    if (this.slide16Container) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      this.slide16Container.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      this.slide16Container.addEventListener('touchend', (e) => {
+        if (e.changedTouches && e.changedTouches.length === 1) {
+          const deltaX = e.changedTouches[0].clientX - touchStartX;
+          const deltaY = e.changedTouches[0].clientY - touchStartY;
+          if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX < 0) {
+              sound.playPop();
+              this.nextGlossaryCard();
+            } else {
+              sound.playPop();
+              this.prevGlossaryCard();
+            }
+          }
+        }
+      }, { passive: true });
+    }
+
     if (this.btnDrawerLeaderboard) {
       this.btnDrawerLeaderboard.addEventListener('click', () => {
         this.closeDrawer();
@@ -773,15 +850,14 @@ class InteractivePresentationApp {
       });
     }
 
-    // Slide 16 Exit App (Kembali ke Splash Screen)
-    const btnRestart = document.getElementById('btn-restart-app');
-    if (btnRestart) {
-      btnRestart.addEventListener('click', (e) => {
+    // Slide 17 Exit App — btn-restart-app ditangani via delegation (elemen ada di slide 17)
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-restart-app')) {
         e.stopPropagation();
         sound.playClick();
         this.openSplash();
-      });
-    }
+      }
+    });
 
     // Info Modal Close
     if (this.btnCloseInfoModal) {
@@ -797,13 +873,8 @@ class InteractivePresentationApp {
       });
     }
 
-    // Glosarium Modal Listeners
-    if (this.btnOpenGlosarium) {
-      this.btnOpenGlosarium.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.openGlosarium();
-      });
-    }
+    // Tombol Glosarium slide 3 menggunakan data-goto="16" — navigasi ditangani oleh delegation global.
+    // Handler khusus tidak diperlukan; modal Glosarium (Vocabulary) dibuka dari tombol di slide 16.
 
     if (this.btnCloseGlosarium) {
       this.btnCloseGlosarium.addEventListener('click', () => {
@@ -890,6 +961,19 @@ class InteractivePresentationApp {
     // Keyboard Navigation
     window.addEventListener('keydown', (e) => {
       const isQuizTakingActive = this.currentSlide === 15 && this.posttestQuizView && this.posttestQuizView.style.display === 'flex';
+
+      // Khusus saat berada di Slide 16 (Glosarium): Panah Kiri & Kanan menggeser kartu kata
+      if (this.currentSlide === 16 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+        e.preventDefault();
+        sound.playPop();
+        if (e.key === 'ArrowRight') {
+          this.nextGlossaryCard();
+        } else {
+          this.prevGlossaryCard();
+        }
+        return;
+      }
+
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         if (this.currentSlide === 15 && !this.isPosttestCompleted()) {
           e.preventDefault();
@@ -984,7 +1068,7 @@ class InteractivePresentationApp {
       playPromise.catch(() => {
         // Fallback jika browser membatasi autoplay dengan suara sebelum ada interaksi pengguna
         video.muted = true;
-        video.play().catch(() => {});
+        video.play().catch(() => { });
       });
     }
   }
@@ -1017,7 +1101,7 @@ class InteractivePresentationApp {
     // Slide 15 Post-test Lock: Tidak bisa lanjut ke Slide 16 sebelum Post-test diselesaikan
     if (this.currentSlide === 15 && slideNumber > 15 && !this.isPosttestCompleted()) {
       sound.playError();
-      this.showToast('Complete the Post-test evaluation before proceeding to Slide 16.');
+      this.showToast('Complete the Post-test evaluation before proceeding to Slide 16 (Glossary).');
       return;
     }
 
@@ -1190,8 +1274,14 @@ class InteractivePresentationApp {
     }
 
     // Cancel speech synthesis if narration is playing
-    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+    if ('speechSynthesis' in window && (window.speechSynthesis.speaking || window.speechSynthesis.paused)) {
       window.speechSynthesis.cancel();
+    }
+    this.stopGlossaryAudio(true);
+
+    // Slide 16 (Glosarium): render kartu slider saat masuk slide 16
+    if (slideNumber === 16) {
+      this._renderGlossarySlide();
     }
   }
 
@@ -1279,6 +1369,8 @@ class InteractivePresentationApp {
         } else if (slide.id === 15) {
           isLocked = this.maxSlideVisited < 14 && !unlocked;
         } else if (slide.id === 16) {
+          isLocked = false;
+        } else if (slide.id === 17) {
           isLocked = (this.maxSlideVisited < 14 && !unlocked) || !this.isPosttestCompleted();
         }
       }
@@ -1291,8 +1383,10 @@ class InteractivePresentationApp {
           : '<span class="drawer-status-badge unlocked">Start</span>';
       } else if (isLocked) {
         badgeHtml = '<span class="drawer-status-badge locked">Locked</span>';
-      } else if (slide.id === 16 && this.isPosttestCompleted()) {
+      } else if (slide.id === 17 && this.isPosttestCompleted()) {
         badgeHtml = '<span class="drawer-status-badge unlocked">Completed</span>';
+      } else if (slide.id === 16) {
+        badgeHtml = '<span class="drawer-status-badge unlocked">Glossary</span>';
       } else if (slide.id <= this.maxSlideVisited) {
         badgeHtml = '<span class="drawer-status-badge completed">✓ Viewed</span>';
       } else {
@@ -1302,10 +1396,10 @@ class InteractivePresentationApp {
       const thumbSrc = slide.isPretest
         ? 'assets/slides/slide_0.webp'
         : (slide.id === 7
-            ? 'assets/slides/slide_7_background.webp'
-            : (slide.id === 11
-                ? 'assets/slides/slide_11_background.webp'
-                : `assets/slides/slide_${slide.id}.webp`));
+          ? 'assets/slides/slide_7_background.webp'
+          : (slide.id === 11
+            ? 'assets/slides/slide_11_background.webp'
+            : `assets/slides/slide_${slide.id}.webp`));
 
       div.className = `drawer-slide-item ${isCurrent ? 'active' : ''} ${isLocked ? 'is-locked' : ''}`;
       div.setAttribute('data-drawer-slide', slide.id);
@@ -1366,7 +1460,21 @@ class InteractivePresentationApp {
       this.splashOverlay.classList.remove('fade-out');
     });
 
-    const currentStudent = dataService.getCurrentStudent();
+    // Pastikan data siswa di-restore dari storage jika memori kosong
+    let currentStudent = dataService.getCurrentStudent();
+    if (!currentStudent) {
+      try {
+        const stored = localStorage.getItem('evaluasi_current_student');
+        if (stored) {
+          currentStudent = JSON.parse(stored);
+          // Sinkronkan kembali ke dataService
+          if (currentStudent && currentStudent.NISN) {
+            dataService.currentStudent = currentStudent;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+
     if (currentStudent) {
       if (this.inputNISN) {
         this.inputNISN.value = currentStudent.NISN || currentStudent.NIS || '';
@@ -1761,7 +1869,7 @@ class InteractivePresentationApp {
               if (this.modalVideoSlide12 && this.modalVideoSlide12.style.display === 'flex') {
                 try {
                   this.ytPlayerSlide12.playVideo();
-                } catch (e) {}
+                } catch (e) { }
               }
             },
             'onStateChange': (event) => {
@@ -1816,7 +1924,7 @@ class InteractivePresentationApp {
         } else if (currentTime > this.slide12MaxTimeWatched) {
           this.slide12MaxTimeWatched = currentTime;
         }
-      } catch (e) {}
+      } catch (e) { }
     }, 500);
   }
 
@@ -1903,7 +2011,7 @@ class InteractivePresentationApp {
     if (this.ytPlayerSlide12 && typeof this.ytPlayerSlide12.playVideo === 'function') {
       try {
         this.ytPlayerSlide12.playVideo();
-      } catch (err) {}
+      } catch (err) { }
     }
   }
 
@@ -1913,7 +2021,7 @@ class InteractivePresentationApp {
     if (this.ytPlayerSlide12 && typeof this.ytPlayerSlide12.pauseVideo === 'function') {
       try {
         this.ytPlayerSlide12.pauseVideo();
-      } catch (err) {}
+      } catch (err) { }
     }
     this.modalVideoSlide12.style.display = 'none';
   }
@@ -1932,6 +2040,270 @@ class InteractivePresentationApp {
     this.glosariumModal.style.display = 'none';
   }
 
+  async openGlossaryModal() {
+    if (!this.glossaryModalOverlay) return;
+
+    // Tampilkan overlay loading state
+    this.glossaryModalOverlay.removeAttribute('hidden');
+
+    if (this.glossaryTableBody && this.glossaryTableBody.innerHTML.includes('Loading')) {
+      // Fetch data hanya sekali — jika sudah dirender, tidak perlu ulang
+      try {
+        const data = await dataService.getGlossary();
+        this.renderGlossaryTable(data);
+      } catch (err) {
+        if (this.glossaryTableBody) {
+          this.glossaryTableBody.innerHTML = `<tr><td colspan="7" class="glossary-loading">Failed to load glossary data. Please check your connection.</td></tr>`;
+        }
+      }
+    }
+
+    // Tutup dengan tombol Escape
+    this._glossaryEscHandler = (e) => {
+      if (e.key === 'Escape') this.closeGlossaryModal();
+    };
+    document.addEventListener('keydown', this._glossaryEscHandler);
+  }
+
+  closeGlossaryModal() {
+    if (!this.glossaryModalOverlay) return;
+    this.glossaryModalOverlay.setAttribute('hidden', '');
+    if (this._glossaryEscHandler) {
+      document.removeEventListener('keydown', this._glossaryEscHandler);
+      this._glossaryEscHandler = null;
+    }
+  }
+
+  renderGlossaryTable(data) {
+    if (!this.glossaryTableBody) return;
+    if (!Array.isArray(data) || data.length === 0) {
+      this.glossaryTableBody.innerHTML = `<tr><td colspan="7" class="glossary-loading">No data available.</td></tr>`;
+      return;
+    }
+
+    const rows = data.map((item, idx) => {
+      const no = item.No ?? (idx + 1);
+      const kata = item.Kata || '';
+      const pron = item.Pronounsiasi || '';
+      const jenis = item.Jenis_Kata || '';
+      const en = item.English_Meaning || '';
+      const id = item.Arti_ID || '';
+      const ex = item.Contoh_Kalimat || '';
+      const badge = jenis ? `<span class="glossary-jenis-badge">${jenis}</span>` : '';
+      return `<tr>
+        <td class="col-no">${no}</td>
+        <td class="col-kata">${kata}</td>
+        <td class="col-pron">${pron}</td>
+        <td class="col-jenis">${badge}</td>
+        <td class="col-en">${en}</td>
+        <td class="col-id">${id}</td>
+        <td class="col-ex">${ex}</td>
+      </tr>`;
+    });
+
+    this.glossaryTableBody.innerHTML = rows.join('');
+  }
+
+  /**
+   * Slide 16: Glosarium Single Card Slider (Slide 13 Style)
+   */
+  async _renderGlossarySlide() {
+    try {
+      if (!this.glossaryItems || this.glossaryItems.length === 0) {
+        const data = await dataService.getGlossary();
+        this.glossaryItems = Array.isArray(data) && data.length > 0 ? data : [];
+      }
+      if (this.glossaryItems.length === 0) return;
+
+      // Inisialisasi Dots Pagination sekali saja
+      if (this.slide16DotsContainer && this.slide16DotsContainer.children.length === 0) {
+        this.slide16DotsContainer.innerHTML = '';
+        this.glossaryItems.forEach((item, idx) => {
+          const dot = document.createElement('button');
+          dot.type = 'button';
+          dot.className = `slide16-dot ${idx === this.glossaryCurrentIndex ? 'active' : ''}`;
+          dot.setAttribute('role', 'tab');
+          dot.setAttribute('aria-label', `Go to word ${idx + 1}`);
+          dot.title = `Word ${idx + 1}: ${item.Kata}`;
+          dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sound.playPop();
+            const dir = idx >= this.glossaryCurrentIndex ? 'next' : 'prev';
+            this.goToGlossaryCard(idx, dir);
+          });
+          this.slide16DotsContainer.appendChild(dot);
+        });
+      }
+
+      // Tampilkan kartu aktif
+      this.goToGlossaryCard(this.glossaryCurrentIndex, 'next', false);
+    } catch (err) {
+      console.warn('[Glossary] Failed to load glossary items:', err);
+    }
+  }
+
+  goToGlossaryCard(index, direction = 'next', shouldAnimate = true) {
+    if (!this.glossaryItems || this.glossaryItems.length === 0) return;
+    this.stopGlossaryAudio(true);
+
+    if (index < 0) index = this.glossaryItems.length - 1;
+    if (index >= this.glossaryItems.length) index = 0;
+    this.glossaryCurrentIndex = index;
+
+    const item = this.glossaryItems[index];
+    const card = document.getElementById('slide16-card');
+
+    if (card && shouldAnimate) {
+      card.classList.remove('slide-in-right', 'slide-in-left');
+      void card.offsetWidth; // Force reflow
+      card.classList.add(direction === 'next' ? 'slide-in-right' : 'slide-in-left');
+    }
+
+    // Populate data
+    const badgeType = document.getElementById('slide16-badge-type');
+    const counterPill = document.getElementById('slide16-counter-pill');
+    const wordTitle = document.getElementById('slide16-word-title');
+    const wordPhonetic = document.getElementById('slide16-word-phonetic');
+    const descEn = document.getElementById('slide16-meaning-en');
+    const descId = document.getElementById('slide16-meaning-id');
+    const descEx = document.getElementById('slide16-example-text');
+
+    if (badgeType) badgeType.textContent = item.Jenis_Kata || 'Vocabulary';
+    if (counterPill) counterPill.textContent = `Word ${index + 1} of ${this.glossaryItems.length}`;
+    if (wordTitle) wordTitle.textContent = item.Kata || '';
+    if (wordPhonetic) wordPhonetic.textContent = item.Pronounsiasi || '';
+    if (descEn) descEn.textContent = item.English_Meaning || '';
+    if (descId) descId.textContent = item.Arti_ID || '';
+    if (descEx) descEx.textContent = item.Contoh_Kalimat ? `"${item.Contoh_Kalimat}"` : '';
+
+    // Update active dot
+    if (this.slide16DotsContainer) {
+      const dots = this.slide16DotsContainer.querySelectorAll('.slide16-dot');
+      dots.forEach((dot, idx) => {
+        if (idx === index) {
+          dot.classList.add('active');
+          dot.setAttribute('aria-selected', 'true');
+        } else {
+          dot.classList.remove('active');
+          dot.setAttribute('aria-selected', 'false');
+        }
+      });
+    }
+  }
+
+  nextGlossaryCard() {
+    if (!this.glossaryItems || this.glossaryItems.length === 0) return;
+    const nextIdx = (this.glossaryCurrentIndex + 1) % this.glossaryItems.length;
+    this.goToGlossaryCard(nextIdx, 'next');
+  }
+
+  prevGlossaryCard() {
+    if (!this.glossaryItems || this.glossaryItems.length === 0) return;
+    const prevIdx = (this.glossaryCurrentIndex - 1 + this.glossaryItems.length) % this.glossaryItems.length;
+    this.goToGlossaryCard(prevIdx, 'prev');
+  }
+
+  toggleGlossaryAudio() {
+    if (!('speechSynthesis' in window)) {
+      this.showToast('Speech synthesis not supported in this browser.');
+      return;
+    }
+    const currentItem = this.glossaryItems[this.glossaryCurrentIndex];
+    if (!currentItem) return;
+
+    sound.playClick();
+
+    // 1. Sedang playing -> Pause
+    if (this.glossaryAudioState === 'playing') {
+      window.speechSynthesis.pause();
+      this.glossaryAudioState = 'paused';
+      this.updateGlossaryAudioUI('paused');
+      return;
+    }
+
+    // 2. Sedang paused -> Resume
+    if (this.glossaryAudioState === 'paused') {
+      window.speechSynthesis.resume();
+      this.glossaryAudioState = 'playing';
+      this.updateGlossaryAudioUI('playing');
+      return;
+    }
+
+    // 3. Sedang idle -> Ucapkan kata dengan bahasa Inggris (en-US)
+    this.stopGlossaryAudio(false);
+
+    const wordToSpeak = currentItem.Kata || '';
+    const utterance = new SpeechSynthesisUtterance(wordToSpeak);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.85;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => {
+      this.glossaryAudioState = 'playing';
+      this.updateGlossaryAudioUI('playing');
+    };
+
+    utterance.onend = () => {
+      this.glossaryAudioState = 'idle';
+      this.updateGlossaryAudioUI('idle');
+      this.glossaryUtterance = null;
+    };
+
+    utterance.onerror = (e) => {
+      console.warn('[Glossary Audio] Utterance error:', e);
+      this.glossaryAudioState = 'idle';
+      this.updateGlossaryAudioUI('idle');
+      this.glossaryUtterance = null;
+    };
+
+    this.glossaryUtterance = utterance;
+    this.glossaryAudioState = 'playing';
+    this.updateGlossaryAudioUI('playing');
+    window.speechSynthesis.speak(utterance);
+  }
+
+  stopGlossaryAudio(resetUI = true) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    this.glossaryAudioState = 'idle';
+    this.glossaryUtterance = null;
+    if (resetUI) {
+      this.updateGlossaryAudioUI('idle');
+    }
+  }
+
+  updateGlossaryAudioUI(state) {
+    const playIcon = document.getElementById('slide16-icon-play');
+    const pauseIcon = document.getElementById('slide16-icon-pause');
+    const btnAudio = document.getElementById('btn-slide16-audio');
+    const statusText = document.getElementById('slide16-audio-state-text');
+
+    if (!btnAudio) return;
+
+    if (state === 'playing') {
+      btnAudio.classList.add('playing');
+      if (playIcon) playIcon.style.display = 'none';
+      if (pauseIcon) pauseIcon.style.display = 'block';
+      if (statusText) statusText.textContent = 'Pause';
+      btnAudio.title = 'Pause Pronunciation';
+    } else if (state === 'paused') {
+      btnAudio.classList.remove('playing');
+      if (playIcon) playIcon.style.display = 'block';
+      if (pauseIcon) pauseIcon.style.display = 'none';
+      if (statusText) statusText.textContent = 'Resume';
+      btnAudio.title = 'Resume Pronunciation';
+    } else {
+      btnAudio.classList.remove('playing');
+      if (playIcon) playIcon.style.display = 'block';
+      if (pauseIcon) pauseIcon.style.display = 'none';
+      if (statusText) statusText.textContent = 'Pronounce';
+      btnAudio.title = 'Play Pronunciation';
+    }
+  }
+
+
+
   renderGlosariumList(searchTerm = '') {
     if (!this.glosariumGrid) return;
     this.glosariumGrid.innerHTML = '';
@@ -1939,10 +2311,10 @@ class InteractivePresentationApp {
     const clean = searchTerm.trim().toLowerCase();
     const filtered = clean
       ? GLOSARIUM_DATA.filter(item =>
-          item.term.toLowerCase().includes(clean) ||
-          item.def.toLowerCase().includes(clean) ||
-          item.category.toLowerCase().includes(clean)
-        )
+        item.term.toLowerCase().includes(clean) ||
+        item.def.toLowerCase().includes(clean) ||
+        item.category.toLowerCase().includes(clean)
+      )
       : GLOSARIUM_DATA;
 
     if (filtered.length === 0) {
@@ -2029,10 +2401,11 @@ class InteractivePresentationApp {
       if (result.success && result.student) {
         sound.playSuccess();
         this.renderVerifiedStudent(result.student);
-        const hasScore = dataService.getPretestScore() !== null;
+        const savedPretest = dataService.getPretestScore();
+        const hasScore = savedPretest !== null && savedPretest !== undefined;
         const msg = hasScore
-          ? 'Student data verified. You may continue to the material or retake the Pretest.'
-          : 'Student data successfully verified. Please click "Start Pretest".';
+          ? `Data siswa terverifikasi (Skor Pretest: ${savedPretest}). Silakan pilih "Next ke Slide 3" atau "Pretest Lagi".`
+          : 'Data siswa berhasil diverifikasi. Silakan klik "Start Pretest".';
         this.showNISNFeedback(msg, 'success');
       } else {
         sound.playError();
@@ -2061,15 +2434,19 @@ class InteractivePresentationApp {
     const savedPretest = dataService.getPretestScore();
     if (savedPretest !== null && savedPretest !== undefined) {
       if (this.btnStartSplash) {
-        this.btnStartSplash.textContent = `Continue Learning (Pretest: ${savedPretest}) ➔`;
+        this.btnStartSplash.textContent = `Next ke Slide 3 (Pretest: ${savedPretest}) ➔`;
+        this.btnStartSplash.setAttribute('title', 'Lanjut langsung ke materi Slide 3');
         this.btnStartSplash.style.display = 'inline-flex';
       }
       if (this.btnRetakePretest) {
-        this.btnRetakePretest.style.display = 'inline-block';
+        this.btnRetakePretest.textContent = 'Pretest Lagi ↺';
+        this.btnRetakePretest.setAttribute('title', 'Kerjakan ulang Pretest');
+        this.btnRetakePretest.style.display = 'inline-flex';
       }
     } else {
       if (this.btnStartSplash) {
         this.btnStartSplash.textContent = 'Start Pretest ➔';
+        this.btnStartSplash.setAttribute('title', 'Mulai pengerjaan Pretest');
         this.btnStartSplash.style.display = 'inline-flex';
       }
       if (this.btnRetakePretest) {
@@ -2500,8 +2877,9 @@ class InteractivePresentationApp {
     });
 
     const finalScore = Math.round((correctCount / total) * 100);
-    this.pretestScore = finalScore;
-    dataService.savePretestScore(finalScore);
+    const saveRes = dataService.savePretestScore(finalScore);
+    const highestScore = dataService.getPretestScore() ?? finalScore;
+    this.pretestScore = highestScore;
 
     sound.playSuccess();
 
@@ -2513,10 +2891,18 @@ class InteractivePresentationApp {
     }
 
     if (this.pretestScoreDetail) {
-      this.pretestScoreDetail.textContent = `Correct answers: ${correctCount} of ${total} questions`;
+      if (saveRes && !saveRes.saved && saveRes.currentScore > finalScore) {
+        this.pretestScoreDetail.textContent = `Correct answers: ${correctCount} of ${total} questions (Highest score kept: ${saveRes.currentScore})`;
+      } else {
+        this.pretestScoreDetail.textContent = `Correct answers: ${correctCount} of ${total} questions`;
+      }
     }
 
-    this.showToast(`Pretest completed. Score: ${finalScore}`);
+    if (saveRes && !saveRes.saved && saveRes.currentScore > finalScore) {
+      this.showToast(`Pretest: ${finalScore} (Highest score kept: ${saveRes.currentScore})`);
+    } else {
+      this.showToast(`Pretest completed. Score: ${finalScore}`);
+    }
   }
 
   closePretestAndStartLearning() {
@@ -2558,7 +2944,7 @@ class InteractivePresentationApp {
     if (this.btnSlide15Next) {
       if (completed) {
         this.btnSlide15Next.classList.remove('is-locked');
-        this.btnSlide15Next.title = 'Go to Slide 16 (Closing)';
+        this.btnSlide15Next.title = 'Go to Slide 16 (Glossary)';
       } else {
         this.btnSlide15Next.classList.add('is-locked');
         this.btnSlide15Next.title = 'Locked - Complete Post-test to proceed';
@@ -3114,8 +3500,9 @@ class InteractivePresentationApp {
     });
 
     const finalScore = Math.min(100, Math.round((totalEarned / totalItems) * 100));
-    this.posttestScore = finalScore;
-    dataService.savePosttestScore(finalScore);
+    const saveRes = dataService.savePosttestScore(finalScore);
+    const highestPosttest = dataService.getPosttestScore() ?? finalScore;
+    this.posttestScore = highestPosttest;
 
     // Kirim & simpan skor ke Leaderboard secara otomatis
     const student = dataService.getCurrentStudent();
@@ -3131,8 +3518,8 @@ class InteractivePresentationApp {
         nisn: student?.NISN || '-',
         nama: student?.Nama || 'Student',
         nilaiPretest: pretestScore,
-        nilaiPosttest: finalScore,
-        totalSkor: finalScore
+        nilaiPosttest: highestPosttest,
+        totalSkor: highestPosttest
       });
     } catch (e) {
       console.warn('[Posttest] Failed to update leaderboard:', e);
@@ -3140,13 +3527,13 @@ class InteractivePresentationApp {
 
     sound.playFanfare();
 
-    // Kalkulasi N-Gain Score (Hake, 1998)
-    const delta = finalScore - pretestScore;
+    // Kalkulasi N-Gain Score (Hake, 1998) berdasarkan skor tertinggi yang tersimpan
+    const delta = highestPosttest - pretestScore;
     let nGain = 0;
     if (100 - pretestScore <= 0) {
-      nGain = finalScore >= 100 ? 1.0 : 0.0;
+      nGain = highestPosttest >= 100 ? 1.0 : 0.0;
     } else {
-      nGain = Math.round(((finalScore - pretestScore) / (100 - pretestScore)) * 100) / 100;
+      nGain = Math.round(((highestPosttest - pretestScore) / (100 - pretestScore)) * 100) / 100;
     }
     const nGainPercent = Math.round(nGain * 100);
 
@@ -3179,7 +3566,11 @@ class InteractivePresentationApp {
     }
 
     if (this.posttestScoreBreakdown) {
-      this.posttestScoreBreakdown.textContent = `Multiple Choice: ${mcqCorrect} / 10 • Matching: ${matchingPairsCorrect} / ${matchingPairsTotal || 5} Pairs`;
+      if (saveRes && !saveRes.saved && saveRes.currentScore > finalScore) {
+        this.posttestScoreBreakdown.textContent = `Multiple Choice: ${mcqCorrect} / 10 • Matching: ${matchingPairsCorrect} / ${matchingPairsTotal || 5} Pairs (Highest score kept: ${highestPosttest})`;
+      } else {
+        this.posttestScoreBreakdown.textContent = `Multiple Choice: ${mcqCorrect} / 10 • Matching: ${matchingPairsCorrect} / ${matchingPairsTotal || 5} Pairs`;
+      }
     }
 
     if (this.posttestCompPretest) {
@@ -3187,7 +3578,7 @@ class InteractivePresentationApp {
     }
 
     if (this.posttestCompPosttest) {
-      this.posttestCompPosttest.textContent = `${finalScore}`;
+      this.posttestCompPosttest.textContent = `${highestPosttest}`;
     }
 
     if (this.posttestCompGain) {
@@ -3223,7 +3614,11 @@ class InteractivePresentationApp {
     this.renderLeaderboard();
 
     this.updateSlide15LockUI();
-    this.showToast(`Post-test completed. Score: ${finalScore} (N-Gain: ${nGain.toFixed(2)})`);
+    if (saveRes && !saveRes.saved && saveRes.currentScore > finalScore) {
+      this.showToast(`Post-test: ${finalScore} (Highest score kept: ${highestPosttest}, N-Gain: ${nGain.toFixed(2)})`);
+    } else {
+      this.showToast(`Post-test completed. Score: ${finalScore} (N-Gain: ${nGain.toFixed(2)})`);
+    }
   }
 
   switchPosttestTab(tabName = 'summary') {

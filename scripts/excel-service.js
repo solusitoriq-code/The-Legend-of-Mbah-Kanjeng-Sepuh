@@ -76,8 +76,10 @@ function saveScoreToExcel(payload, isFlushing = false) {
     }
   }
 
+  const isNewRow = (targetRow === -1);
+
   // Jika siswa belum terdaftar di Leaderboard, buat baris baru di akhir
-  if (targetRow === -1) {
+  if (isNewRow) {
     targetRow = refRange.e.r + 1;
     sheet[xlsx.utils.encode_cell({ c: 0, r: targetRow })] = { t: 's', v: cleanNIS };
     sheet[xlsx.utils.encode_cell({ c: 1, r: targetRow })] = { t: 's', v: cleanNISN };
@@ -92,25 +94,55 @@ function saveScoreToExcel(payload, isFlushing = false) {
 
   const excelRowNum = targetRow + 1;
 
-  // Catat Nilai Pretest jika disertakan
+  // Baca nilai lama dari sel Excel
+  const preCellKey = xlsx.utils.encode_cell({ c: 4, r: targetRow });
+  const postCellKey = xlsx.utils.encode_cell({ c: 5, r: targetRow });
+
+  const existingPreCell = sheet[preCellKey];
+  const hasExistingPre = existingPreCell && existingPreCell.v !== undefined && existingPreCell.v !== null && existingPreCell.v !== '' && !isNaN(Number(existingPreCell.v));
+  const existingPreVal = hasExistingPre ? Number(existingPreCell.v) : null;
+
+  const existingPostCell = sheet[postCellKey];
+  const hasExistingPost = existingPostCell && existingPostCell.v !== undefined && existingPostCell.v !== null && existingPostCell.v !== '' && !isNaN(Number(existingPostCell.v));
+  const existingPostVal = hasExistingPost ? Number(existingPostCell.v) : null;
+
+  let preUpdated = false;
+  let postUpdated = false;
+  let finalPreVal = existingPreVal;
+  let finalPostVal = existingPostVal;
+
+  // Catat Nilai Pretest: Hanya simpan jika lebih tinggi dari nilai sebelumnya
   if (payload.nilaiPretest !== undefined && payload.nilaiPretest !== null && !isNaN(Number(payload.nilaiPretest))) {
-    const preScore = Math.round(Number(payload.nilaiPretest));
-    sheet[xlsx.utils.encode_cell({ c: 4, r: targetRow })] = { t: 'n', v: preScore };
+    const candidatePre = Math.round(Number(payload.nilaiPretest));
+    if (existingPreVal === null || candidatePre > existingPreVal) {
+      sheet[preCellKey] = { t: 'n', v: candidatePre };
+      finalPreVal = candidatePre;
+      preUpdated = true;
+      console.log(`[ExcelService] Pretest NISN ${cleanNISN}: diperbarui ${existingPreVal ?? '-'} -> ${candidatePre}`);
+    } else {
+      console.log(`[ExcelService] Pretest NISN ${cleanNISN}: nilai baru (${candidatePre}) <= skor tertinggi sebelumnya (${existingPreVal}). Nilai lama dipertahankan.`);
+    }
   }
 
-  // Catat Nilai Post-test jika disertakan
-  let postScore = null;
+  // Catat Nilai Post-test: Hanya simpan jika lebih tinggi dari nilai sebelumnya
   if (payload.nilaiPosttest !== undefined && payload.nilaiPosttest !== null && !isNaN(Number(payload.nilaiPosttest))) {
-    postScore = Math.round(Number(payload.nilaiPosttest));
-    sheet[xlsx.utils.encode_cell({ c: 5, r: targetRow })] = { t: 'n', v: postScore };
-    sheet[xlsx.utils.encode_cell({ c: 6, r: targetRow })] = { t: 'n', v: 75 };
+    const candidatePost = Math.round(Number(payload.nilaiPosttest));
+    if (existingPostVal === null || candidatePost > existingPostVal) {
+      sheet[postCellKey] = { t: 'n', v: candidatePost };
+      sheet[xlsx.utils.encode_cell({ c: 6, r: targetRow })] = { t: 'n', v: 75 };
 
-    const isLulus = postScore >= 75;
-    sheet[xlsx.utils.encode_cell({ c: 7, r: targetRow })] = {
-      t: 's',
-      f: `IF(F${excelRowNum}="","",IF(F${excelRowNum}>=G${excelRowNum},"Lulus","Remidi"))`,
-      v: isLulus ? 'Lulus' : 'Remidi'
-    };
+      const isLulus = candidatePost >= 75;
+      sheet[xlsx.utils.encode_cell({ c: 7, r: targetRow })] = {
+        t: 's',
+        f: `IF(F${excelRowNum}="","",IF(F${excelRowNum}>=G${excelRowNum},"Lulus","Remidi"))`,
+        v: isLulus ? 'Lulus' : 'Remidi'
+      };
+      finalPostVal = candidatePost;
+      postUpdated = true;
+      console.log(`[ExcelService] Post-test NISN ${cleanNISN}: diperbarui ${existingPostVal ?? '-'} -> ${candidatePost}`);
+    } else {
+      console.log(`[ExcelService] Post-test NISN ${cleanNISN}: nilai baru (${candidatePost}) <= skor tertinggi sebelumnya (${existingPostVal}). Nilai lama dipertahankan.`);
+    }
   } else if (!sheet[xlsx.utils.encode_cell({ c: 7, r: targetRow })]) {
     // Formula default jika belum ada Post-test
     sheet[xlsx.utils.encode_cell({ c: 6, r: targetRow })] = { t: 'n', v: 75 };
@@ -121,51 +153,60 @@ function saveScoreToExcel(payload, isFlushing = false) {
     };
   }
 
-  // Tulis berkas Excel
+  // Tulis berkas Excel jika ada baris baru atau skor meningkat
   let excelSaved = false;
-  try {
-    xlsx.writeFile(workbook, EXCEL_PATH);
+  if (isNewRow || preUpdated || postUpdated) {
+    try {
+      xlsx.writeFile(workbook, EXCEL_PATH);
+      excelSaved = true;
+      console.log(`[ExcelService] Berhasil menyimpan nilai ke ${EXCEL_PATH} (Baris ${excelRowNum})`);
+      // Coba proses antrian pending sebelumnya jika ada dan bukan berasal dari flushing
+      if (!isFlushing) {
+        flushPendingScores();
+      }
+    } catch (err) {
+      if (err.code === 'EBUSY') {
+        console.warn(`[ExcelService] Peringatan: Berkas ${EXCEL_PATH} sedang dibuka di aplikasi Excel. Data disimpan ke antrian pending dan disinkronkan ke JSON.`);
+        queuePendingScore({
+          nisn: cleanNISN,
+          nis: cleanNIS,
+          nama: cleanNama,
+          kelas: cleanKelas,
+          nilaiPretest: finalPreVal !== null ? finalPreVal : payload.nilaiPretest,
+          nilaiPosttest: finalPostVal !== null ? finalPostVal : payload.nilaiPosttest,
+          timestamp: payload.timestamp
+        });
+      } else {
+        console.error(`[ExcelService] Gagal menulis berkas Excel:`, err);
+      }
+    }
+  } else {
     excelSaved = true;
-    console.log(`[ExcelService] Berhasil menyimpan nilai ke ${EXCEL_PATH} (Baris ${excelRowNum})`);
-    // Coba proses antrian pending sebelumnya jika ada dan bukan berasal dari flushing
-    if (!isFlushing) {
-      flushPendingScores();
-    }
-  } catch (err) {
-    if (err.code === 'EBUSY') {
-      console.warn(`[ExcelService] Peringatan: Berkas ${EXCEL_PATH} sedang dibuka di aplikasi Excel. Data disimpan ke antrian pending dan disinkronkan ke JSON.`);
-      queuePendingScore({
-        nisn: cleanNISN,
-        nis: cleanNIS,
-        nama: cleanNama,
-        kelas: cleanKelas,
-        nilaiPretest: payload.nilaiPretest,
-        nilaiPosttest: payload.nilaiPosttest,
-        timestamp: payload.timestamp
-      });
-    } else {
-      console.error(`[ExcelService] Gagal menulis berkas Excel:`, err);
-    }
+    console.log(`[ExcelService] Tidak ada peningkatan nilai untuk NISN ${cleanNISN}. Berkas Excel tidak perlu ditulis ulang.`);
   }
 
-  // Sinkronisasi otomatis ke materi_evaluasi.json
+  // Sinkronisasi otomatis ke materi_evaluasi.json dengan skor tertinggi
   syncScoreToJson({
     nisn: cleanNISN,
     nis: cleanNIS,
     nama: cleanNama,
     kelas: cleanKelas,
-    nilaiPretest: payload.nilaiPretest !== undefined ? Number(payload.nilaiPretest) : undefined,
-    nilaiPosttest: postScore !== null ? postScore : undefined,
-    timestamp: payload.timestamp
+    nilaiPretest: finalPreVal !== null ? finalPreVal : undefined,
+    nilaiPosttest: finalPostVal !== null ? finalPostVal : undefined,
+    timestamp: payload.timestamp,
+    scoreUpdated: isNewRow || preUpdated || postUpdated
   });
 
   return {
     success: true,
     excelSaved,
     row: excelRowNum,
-    message: excelSaved 
-      ? `Nilai berhasil disimpan ke materi_evaluasi.xlsx (Baris ${excelRowNum})`
-      : `Nilai tersimpan di memori/antrian (materi_evaluasi.xlsx sedang dibuka di Excel).`
+    updated: (preUpdated || postUpdated),
+    pretestScore: finalPreVal,
+    posttestScore: finalPostVal,
+    message: (preUpdated || postUpdated)
+      ? `Nilai tertinggi berhasil disimpan ke materi_evaluasi.xlsx (Baris ${excelRowNum})`
+      : `Nilai sebelumnya lebih tinggi atau sama (${existingPreVal ?? '-'}/${existingPostVal ?? '-'}). Skor tertinggi tetap dipertahankan.`
   };
 }
 
@@ -179,7 +220,15 @@ function queuePendingScore(record) {
     }
     const idx = queue.findIndex(q => (record.nisn && q.nisn === record.nisn) || (record.nis && q.nis === record.nis));
     if (idx >= 0) {
-      queue[idx] = { ...queue[idx], ...record };
+      const existing = queue[idx];
+      const merged = { ...existing, ...record };
+      if (existing.nilaiPretest !== undefined && record.nilaiPretest !== undefined) {
+        merged.nilaiPretest = Math.max(Number(existing.nilaiPretest || 0), Number(record.nilaiPretest || 0));
+      }
+      if (existing.nilaiPosttest !== undefined && record.nilaiPosttest !== undefined) {
+        merged.nilaiPosttest = Math.max(Number(existing.nilaiPosttest || 0), Number(record.nilaiPosttest || 0));
+      }
+      queue[idx] = merged;
     } else {
       queue.push(record);
     }
@@ -239,6 +288,7 @@ function syncScoreToJson(record) {
     const cleanNIS = String(record.nis || '').trim();
     const cleanNama = String(record.nama || '').trim().toLowerCase();
 
+    let isNewEntry = false;
     let entry = data.leaderboard.find(item => {
       const iNISN = String(item.NISN || item.nisn || '').trim();
       const iNIS = String(item.NIS || item.nis || '').trim();
@@ -252,6 +302,7 @@ function syncScoreToJson(record) {
     const timestamp = record.timestamp || defaultTimestamp;
 
     if (!entry) {
+      isNewEntry = true;
       entry = {
         Timestamp: timestamp,
         NIS: record.nis || '',
@@ -262,19 +313,39 @@ function syncScoreToJson(record) {
       data.leaderboard.push(entry);
     }
 
-    entry.Timestamp = timestamp;
     if (record.nama) entry.Nama = record.nama;
     if (record.kelas) entry.Kelas = record.kelas;
 
+    let scoreChanged = false;
+
+    // Nilai Pretest: Hanya update jika lebih tinggi atau belum pernah ada
     if (record.nilaiPretest !== undefined && record.nilaiPretest !== null && !isNaN(Number(record.nilaiPretest))) {
-      entry.Nilai_Pretest = Math.round(Number(record.nilaiPretest));
+      const candidatePre = Math.round(Number(record.nilaiPretest));
+      const hasOldPre = entry.Nilai_Pretest !== undefined && entry.Nilai_Pretest !== null && entry.Nilai_Pretest !== '' && !isNaN(Number(entry.Nilai_Pretest));
+      const oldPreVal = hasOldPre ? Number(entry.Nilai_Pretest) : null;
+      if (oldPreVal === null || candidatePre > oldPreVal) {
+        entry.Nilai_Pretest = candidatePre;
+        scoreChanged = true;
+      }
     }
+
+    // Nilai Post-test: Hanya update jika lebih tinggi atau belum pernah ada
     if (record.nilaiPosttest !== undefined && record.nilaiPosttest !== null && !isNaN(Number(record.nilaiPosttest))) {
-      const post = Math.round(Number(record.nilaiPosttest));
-      entry.Nilai_Posttest = post;
-      entry.Nilai_Remidi = 75;
-      entry.Status = post >= 75 ? 'Lulus' : 'Remidi';
-      entry.Total_Skor = post;
+      const candidatePost = Math.round(Number(record.nilaiPosttest));
+      const hasOldPost = entry.Nilai_Posttest !== undefined && entry.Nilai_Posttest !== null && entry.Nilai_Posttest !== '' && !isNaN(Number(entry.Nilai_Posttest));
+      const oldPostVal = hasOldPost ? Number(entry.Nilai_Posttest) : null;
+      if (oldPostVal === null || candidatePost > oldPostVal) {
+        entry.Nilai_Posttest = candidatePost;
+        entry.Nilai_Remidi = 75;
+        entry.Status = candidatePost >= 75 ? 'Lulus' : 'Remidi';
+        entry.Total_Skor = candidatePost;
+        scoreChanged = true;
+      }
+    }
+
+    // Timestamp hanya diperbarui jika terjadi pembaruan nilai atau entri baru
+    if (isNewEntry || scoreChanged || record.scoreUpdated) {
+      entry.Timestamp = timestamp;
     }
 
     // Urutkan leaderboard

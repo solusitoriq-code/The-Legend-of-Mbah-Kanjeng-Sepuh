@@ -100,10 +100,89 @@ class DataService {
   }
 
   getStorageKeyWithNISN(baseKey) {
-    if (this.currentStudent && this.currentStudent.NISN) {
-      return `${baseKey}_${this.currentStudent.NISN}`;
+    if (this.currentStudent) {
+      const id = this.currentStudent.NISN || this.currentStudent.NIS;
+      if (id) return `${baseKey}_${id}`;
     }
     return baseKey;
+  }
+
+  /**
+   * Menyinkronkan dan memuat skor pretest & posttest tertinggi siswa yang aktif
+   * dari LocalStorage, cache Leaderboard, dan data.leaderboard
+   * @param {object} student
+   */
+  syncStudentScores(student = this.currentStudent) {
+    if (!student) return;
+    const nisn = String(student.NISN || '').trim();
+    const nis = String(student.NIS || '').trim();
+    const nama = String(student.Nama || '').trim().toLowerCase();
+
+    const pretestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.PRETEST_SCORE);
+    const posttestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.POSTTEST_SCORE);
+    const slideKey = this.getStorageKeyWithNISN(STORAGE_KEYS.MAX_SLIDE_VISITED);
+
+    let maxPre = null;
+    let maxPost = null;
+
+    // 1. Cek storage siswa saat ini
+    const storedPre = safeStorage.getItem(pretestKey);
+    if (storedPre !== null && storedPre !== '' && !isNaN(Number(storedPre))) {
+      maxPre = Number(storedPre);
+    }
+
+    const storedPost = safeStorage.getItem(posttestKey);
+    if (storedPost !== null && storedPost !== '' && !isNaN(Number(storedPost))) {
+      maxPost = Number(storedPost);
+    }
+
+    // 2. Cek semua sumber leaderboard (cache lokal & data yang dimuat)
+    let lbEntries = [];
+    try {
+      const storedLb = safeStorage.getItem(STORAGE_KEYS.LEADERBOARD_LOCAL);
+      if (storedLb) lbEntries = JSON.parse(storedLb);
+    } catch (e) {}
+
+    if (this.data?.leaderboard && Array.isArray(this.data.leaderboard)) {
+      lbEntries = [...lbEntries, ...this.data.leaderboard];
+    }
+
+    const matches = lbEntries.filter(item => {
+      const iNISN = String(item.NISN || item.nisn || '').trim();
+      const iNIS = String(item.NIS || item.nis || '').trim();
+      const iNama = String(item.Nama || item.nama || '').trim().toLowerCase();
+      return (nisn && iNISN === nisn) || (nis && iNIS === nis) || (nama && iNama === nama);
+    });
+
+    matches.forEach(item => {
+      const pre = item.Nilai_Pretest ?? item.nilaiPretest;
+      const post = item.Nilai_Posttest ?? item.nilaiPosttest ?? item.Total_Skor ?? item.totalSkor;
+      if (pre !== undefined && pre !== null && pre !== '' && !isNaN(Number(pre))) {
+        const numPre = Number(pre);
+        if (maxPre === null || numPre > maxPre) maxPre = numPre;
+      }
+      if (post !== undefined && post !== null && post !== '' && !isNaN(Number(post))) {
+        const numPost = Number(post);
+        if (maxPost === null || numPost > maxPost) maxPost = numPost;
+      }
+    });
+
+    this.pretestScore = maxPre;
+    this.posttestScore = maxPost;
+
+    if (maxPre !== null) {
+      safeStorage.setItem(pretestKey, String(maxPre));
+      safeStorage.setItem(STORAGE_KEYS.PRETEST_SCORE, String(maxPre));
+    }
+    if (maxPost !== null) {
+      safeStorage.setItem(posttestKey, String(maxPost));
+      safeStorage.setItem(STORAGE_KEYS.POSTTEST_SCORE, String(maxPost));
+    }
+
+    const storedSlide = safeStorage.getItem(slideKey);
+    if (storedSlide !== null && !isNaN(parseInt(storedSlide, 10))) {
+      this.maxSlideVisited = Math.max(1, parseInt(storedSlide, 10));
+    }
   }
 
   initFromStorage() {
@@ -111,15 +190,16 @@ class DataService {
       const savedStudent = safeStorage.getItem(STORAGE_KEYS.CURRENT_STUDENT);
       if (savedStudent) {
         this.currentStudent = JSON.parse(savedStudent);
+        this.syncStudentScores(this.currentStudent);
       }
       const pretestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.PRETEST_SCORE);
       const savedPretest = safeStorage.getItem(pretestKey) || safeStorage.getItem(STORAGE_KEYS.PRETEST_SCORE);
-      if (savedPretest !== null) {
+      if (savedPretest !== null && this.pretestScore === null) {
         this.pretestScore = Number(savedPretest);
       }
       const posttestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.POSTTEST_SCORE);
       const savedPosttest = safeStorage.getItem(posttestKey) || safeStorage.getItem(STORAGE_KEYS.POSTTEST_SCORE);
-      if (savedPosttest !== null) {
+      if (savedPosttest !== null && this.posttestScore === null) {
         this.posttestScore = Number(savedPosttest);
       }
       const slideKey = this.getStorageKeyWithNISN(STORAGE_KEYS.MAX_SLIDE_VISITED);
@@ -133,6 +213,9 @@ class DataService {
       if (cached) {
         this.data = JSON.parse(cached);
         this.isLoaded = true;
+        if (this.currentStudent) {
+          this.syncStudentScores(this.currentStudent);
+        }
       }
     } catch (e) {
       console.warn('[DataService] Failed to read session storage:', e);
@@ -172,6 +255,7 @@ class DataService {
               this.data = remoteData;
               this.isLoaded = true;
               safeStorage.setItem(STORAGE_KEYS.LOCAL_DATA_CACHE, JSON.stringify(remoteData));
+              if (this.currentStudent) this.syncStudentScores(this.currentStudent);
             }
           })
           .catch(err => {
@@ -199,6 +283,7 @@ class DataService {
         const remoteData = await response.json();
         this.data = remoteData;
         safeStorage.setItem(STORAGE_KEYS.LOCAL_DATA_CACHE, JSON.stringify(remoteData));
+        if (this.currentStudent) this.syncStudentScores(this.currentStudent);
       } else {
         // Mode LOCAL: Muat dari berkas materi_evaluasi.json
         const response = await fetch(CONFIG.LOCAL_DATA_PATH, {
@@ -207,6 +292,7 @@ class DataService {
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
         this.data = await response.json();
         safeStorage.setItem(STORAGE_KEYS.LOCAL_DATA_CACHE, JSON.stringify(this.data));
+        if (this.currentStudent) this.syncStudentScores(this.currentStudent);
       }
       this.isLoaded = true;
       return this.data;
@@ -216,6 +302,7 @@ class DataService {
       if (cached) {
         this.data = JSON.parse(cached);
         this.isLoaded = true;
+        if (this.currentStudent) this.syncStudentScores(this.currentStudent);
         return this.data;
       }
       throw error;
@@ -283,6 +370,7 @@ class DataService {
 
     if (found) {
       this.currentStudent = found;
+      this.syncStudentScores(found);
       try {
         safeStorage.setItem(STORAGE_KEYS.CURRENT_STUDENT, JSON.stringify(found));
       } catch (e) {
@@ -333,26 +421,99 @@ class DataService {
   }
 
   /**
-   * Menyimpan skor Pretest
+   * Mengambil daftar kosakata Glossary dari Google Sheets atau fallback hardcode
+   * @returns {Promise<Array>}
+   */
+  async getGlossary() {
+    // Coba ambil dari Google Sheets API
+    if (CONFIG.MODE === 'GOOGLE_SHEETS' && CONFIG.GOOGLE_SHEETS_URL) {
+      try {
+        const resp = await fetch(`${CONFIG.GOOGLE_SHEETS_URL}?action=getGlossary`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (resp.ok) {
+          const json = await resp.json();
+          if (json && json.success && Array.isArray(json.glossary) && json.glossary.length > 0) {
+            return json.glossary;
+          }
+        }
+      } catch (err) {
+        console.warn('[DataService] getGlossary remote failed, using fallback:', err);
+      }
+    }
+
+    // Fallback hardcode (16 kata dari Glossary.docx)
+    return [
+      { No: 1, Kata: 'Protagonist', Pronounsiasi: '/ˈproʊ.tæɡ.ə.nɪst/', Jenis_Kata: 'Noun', English_Meaning: 'The main or central character in a story, play, or narrative.', Arti_ID: 'Tokoh utama dalam cerita naratif.', Contoh_Kalimat: 'Kanjeng Sepuh is the benevolent protagonist of the legend.' },
+      { No: 2, Kata: 'Drought', Pronounsiasi: '/draʊt/', Jenis_Kata: 'Noun', English_Meaning: 'A prolonged period of abnormally low rainfall leading to a severe shortage of water.', Arti_ID: 'Bencana kekeringan / musim kemarau panjang yang parah.', Contoh_Kalimat: 'A severe drought destroyed the farms along the Lamongan-Tuban border.' },
+      { No: 3, Kata: 'Disruption', Pronounsiasi: '/dɪsˈrʌp.ʃən/', Jenis_Kata: 'Noun', English_Meaning: 'A disturbance or problem that interrupts an event, activity, or continuous peaceful state.', Arti_ID: 'Gangguan / kekacauan yang merusak ketentraman.', Contoh_Kalimat: 'Unfair colonial taxes caused severe economic disruption for native merchants.' },
+      { No: 4, Kata: 'Excavate', Pronounsiasi: '/ˈek.skə.veɪt/', Jenis_Kata: 'Verb', English_Meaning: 'To make a hole or channel by digging out earth, stone, or sand.', Arti_ID: 'Menggali / mengeruk tanah.', Contoh_Kalimat: 'Kanjeng Sepuh excavated a vital canal known as Kalibela.' },
+      { No: 5, Kata: 'Confront', Pronounsiasi: '/kənˈfrʌnt/', Jenis_Kata: 'Verb', English_Meaning: 'To face, meet, or stand up to someone or something in an assertive or courageous way.', Arti_ID: 'Menghadapi secara berani / menentang secara langsung.', Contoh_Kalimat: 'He confronted the colonial officers without any fear.' },
+      { No: 6, Kata: 'Relic', Pronounsiasi: '/ˈrel.ɪk/', Jenis_Kata: 'Noun', English_Meaning: 'An object, structure, or custom that has survived from an earlier historical era.', Arti_ID: 'Peninggalan bersejarah / artefak peninggalan masa lampau.', Contoh_Kalimat: 'The sacred spring of Telaga Rambit remains an enduring historical relic.' },
+      { No: 7, Kata: 'Enduring', Pronounsiasi: '/ɪnˈdjʊər.ɪŋ/', Jenis_Kata: 'Adjective', English_Meaning: 'Lasting for a very long time; continuing or long-lived across generations.', Arti_ID: 'Abadi / bertahan lama melintasi zaman.', Contoh_Kalimat: 'His moral teachings left an enduring legacy in Sedayu.' },
+      { No: 8, Kata: 'Humility', Pronounsiasi: '/hjuːˈmɪl.ɪ.ti/', Jenis_Kata: 'Noun', English_Meaning: 'The quality of being modest, respectful, and not considering oneself better than others.', Arti_ID: 'Kerendahan hati / sikap tidak sombong.', Contoh_Kalimat: 'Despite his royal background, he showed great humility toward the farmers.' },
+      { No: 9, Kata: 'Decree', Pronounsiasi: '/dɪˈkriː/', Jenis_Kata: 'Noun', English_Meaning: 'An official order, command, or legal proclamation issued by an authority or ruler.', Arti_ID: 'Surat ketetapan / titah resmi / surat perintah penguasa.', Contoh_Kalimat: 'He firmly pushed aside the unfair tax decree.' },
+      { No: 10, Kata: 'Steed', Pronounsiasi: '/stiːd/', Jenis_Kata: 'Noun', English_Meaning: 'A noble, high-spirited, or well-trained horse used for riding.', Arti_ID: 'Kuda tunggangan yang gagah / luhur.', Contoh_Kalimat: 'He entrusted his noble steeds to Kyai Jayeng Katon in Ujungpangkah.' },
+      { No: 11, Kata: 'Vanity', Pronounsiasi: '/ˈvæn.ɪ.ti/', Jenis_Kata: 'Noun', English_Meaning: "Excessive pride in one's own appearance, status, abilities, or achievements.", Arti_ID: 'Kesombongan / kebanggaan diri yang berlebihan / kepamrihan.', Contoh_Kalimat: 'He stated that a throne is not for personal vanity.' },
+      { No: 12, Kata: 'Subjugation', Pronounsiasi: '/ˌsʌb.dʒʊˈɡeɪ.ʃən/', Jenis_Kata: 'Noun', English_Meaning: 'The act of conquering, defeating, or bringing someone under complete political or military control.', Arti_ID: 'Penaklukan / penundukan / penindasan kekuasaan.', Contoh_Kalimat: 'The local community resisted foreign subjugation.' },
+      { No: 13, Kata: 'Overflow', Pronounsiasi: '/ˌoʊ.vəˈfloʊ/', Jenis_Kata: 'Verb', English_Meaning: 'To flow over the brim, edges, or limits because of excess liquid.', Arti_ID: 'Meluap / memancar berlimpah-limpah.', Contoh_Kalimat: 'The fresh springs overflowed, supplying water to thousands of villagers.' },
+      { No: 14, Kata: 'Takeaway', Pronounsiasi: '/ˈteɪk.ə.weɪ/', Jenis_Kata: 'Noun', English_Meaning: 'A key fact, message, or moral point to be remembered from an event or story.', Arti_ID: 'Pesan inti / pelajaran moral yang dipetik dari suatu peristiwa.', Contoh_Kalimat: 'The primary takeaway of this legend is to lead with compassion and serve the weak.' },
+      { No: 15, Kata: 'Reconcile', Pronounsiasi: '/ˈrek.ən.saɪl/', Jenis_Kata: 'Verb', English_Meaning: 'To restore friendly relations and settle differences between opposing parties.', Arti_ID: 'Mendamaikan / mempertemukan dua pihak yang berselisih.', Contoh_Kalimat: 'The canal effectively reconciled the two neighboring villages.' },
+      { No: 16, Kata: 'Benevolent', Pronounsiasi: '/bɪˈnev.əl.ənt/', Jenis_Kata: 'Adjective', English_Meaning: 'Kind, generous, well-meaning, and actively dedicated to doing good for others.', Arti_ID: 'Penuh kebajikan / suka menolong / berhati mulia dan penyayang kepada rakyat.', Contoh_Kalimat: 'Kanjeng Sepuh was remembered as a benevolent leader who protected the vulnerable.' }
+    ];
+  }
+
+  /**
+   * Menyimpan skor Pretest (Hanya jika belum ada atau lebih tinggi dari nilai sebelumnya)
    * @param {number} score
+   * @returns {{saved: boolean, isHighest: boolean, currentScore: number, newScore: number}}
    */
   savePretestScore(score) {
-    this.pretestScore = Number(score);
+    const candidateScore = Math.round(Number(score));
+    if (isNaN(candidateScore)) {
+      return { saved: false, isHighest: false, currentScore: this.pretestScore, newScore: score };
+    }
+
+    this.syncStudentScores();
+
+    const existingScore = (this.pretestScore !== null && this.pretestScore !== undefined && !isNaN(Number(this.pretestScore)))
+      ? Number(this.pretestScore)
+      : null;
+
+    // Jika sudah ada nilai sebelumnya dan lebih tinggi atau sama, jangan simpan!
+    if (existingScore !== null && existingScore >= candidateScore) {
+      console.log(`[DataService] Nilai pretest baru (${candidateScore}) <= skor tertinggi sebelumnya (${existingScore}). Nilai tidak diubah.`);
+      return {
+        saved: false,
+        isHighest: false,
+        currentScore: existingScore,
+        newScore: candidateScore
+      };
+    }
+
+    this.pretestScore = candidateScore;
     try {
       const key = this.getStorageKeyWithNISN(STORAGE_KEYS.PRETEST_SCORE);
-      safeStorage.setItem(key, String(score));
-      safeStorage.setItem(STORAGE_KEYS.PRETEST_SCORE, String(score));
+      safeStorage.setItem(key, String(candidateScore));
+      safeStorage.setItem(STORAGE_KEYS.PRETEST_SCORE, String(candidateScore));
     } catch (e) {
       console.warn(e);
     }
 
     // Otomatis kirim nilai pretest ke database / data/materi_evaluasi.xlsx
     this.submitScore({
-      nilaiPretest: score,
+      nilaiPretest: candidateScore,
       isPretest: true
     }).catch(err => {
       console.warn('[DataService] Pretest auto-submit notice:', err);
     });
+
+    return {
+      saved: true,
+      isHighest: true,
+      currentScore: candidateScore,
+      newScore: candidateScore
+    };
   }
 
   getPretestScore() {
@@ -360,18 +521,48 @@ class DataService {
   }
 
   /**
-   * Menyimpan skor Post-test
+   * Menyimpan skor Post-test (Hanya jika belum ada atau lebih tinggi dari nilai sebelumnya)
    * @param {number} score
+   * @returns {{saved: boolean, isHighest: boolean, currentScore: number, newScore: number}}
    */
   savePosttestScore(score) {
-    this.posttestScore = Number(score);
+    const candidateScore = Math.round(Number(score));
+    if (isNaN(candidateScore)) {
+      return { saved: false, isHighest: false, currentScore: this.posttestScore, newScore: score };
+    }
+
+    this.syncStudentScores();
+
+    const existingScore = (this.posttestScore !== null && this.posttestScore !== undefined && !isNaN(Number(this.posttestScore)))
+      ? Number(this.posttestScore)
+      : null;
+
+    // Jika sudah ada nilai sebelumnya dan lebih tinggi atau sama, jangan simpan!
+    if (existingScore !== null && existingScore >= candidateScore) {
+      console.log(`[DataService] Nilai posttest baru (${candidateScore}) <= skor tertinggi sebelumnya (${existingScore}). Nilai tidak diubah.`);
+      return {
+        saved: false,
+        isHighest: false,
+        currentScore: existingScore,
+        newScore: candidateScore
+      };
+    }
+
+    this.posttestScore = candidateScore;
     try {
       const key = this.getStorageKeyWithNISN(STORAGE_KEYS.POSTTEST_SCORE);
-      safeStorage.setItem(key, String(score));
-      safeStorage.setItem(STORAGE_KEYS.POSTTEST_SCORE, String(score));
+      safeStorage.setItem(key, String(candidateScore));
+      safeStorage.setItem(STORAGE_KEYS.POSTTEST_SCORE, String(candidateScore));
     } catch (e) {
       console.warn(e);
     }
+
+    return {
+      saved: true,
+      isHighest: true,
+      currentScore: candidateScore,
+      newScore: candidateScore
+    };
   }
 
   getPosttestScore() {
@@ -461,27 +652,49 @@ class DataService {
       await this.loadData();
     }
 
+    this.syncStudentScores();
+
     const pad = (n) => String(n).padStart(2, '0');
     const now = new Date();
     const defaultTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
     const isPretestOnly = Boolean(payload.isPretest || (payload.nilaiPosttest === undefined && payload.nilaiPretest !== undefined));
 
-    const preVal = payload.nilaiPretest !== undefined ? Number(payload.nilaiPretest) : (this.pretestScore !== null ? Number(this.pretestScore) : undefined);
-    const postVal = payload.nilaiPosttest !== undefined ? Number(payload.nilaiPosttest) : (this.posttestScore !== null ? Number(this.posttestScore) : undefined);
+    // Bandingkan dengan nilai tertinggi yang tersimpan di memori & storage
+    let finalPre = (this.pretestScore !== null && this.pretestScore !== undefined && !isNaN(Number(this.pretestScore)))
+      ? Number(this.pretestScore)
+      : undefined;
 
-    if (preVal !== undefined) this.pretestScore = preVal;
-    if (postVal !== undefined) this.posttestScore = postVal;
+    if (payload.nilaiPretest !== undefined && payload.nilaiPretest !== null && !isNaN(Number(payload.nilaiPretest))) {
+      const candidatePre = Math.round(Number(payload.nilaiPretest));
+      if (finalPre === undefined || candidatePre > finalPre) {
+        finalPre = candidatePre;
+      }
+    }
 
-    const totalVal = Number(payload.totalSkor ?? postVal ?? preVal ?? 0);
+    let finalPost = (this.posttestScore !== null && this.posttestScore !== undefined && !isNaN(Number(this.posttestScore)))
+      ? Number(this.posttestScore)
+      : undefined;
+
+    if (payload.nilaiPosttest !== undefined && payload.nilaiPosttest !== null && !isNaN(Number(payload.nilaiPosttest))) {
+      const candidatePost = Math.round(Number(payload.nilaiPosttest));
+      if (finalPost === undefined || candidatePost > finalPost) {
+        finalPost = candidatePost;
+      }
+    }
+
+    if (finalPre !== undefined) this.pretestScore = finalPre;
+    if (finalPost !== undefined) this.posttestScore = finalPost;
+
+    const totalVal = Number(payload.totalSkor ?? finalPost ?? finalPre ?? 0);
 
     // Hitung N-Gain Hake jika pretest dan posttest ada
     let nGain = 0;
-    if (preVal !== undefined && postVal !== undefined) {
-      if (100 - preVal <= 0) {
-        nGain = postVal >= 100 ? 1.0 : 0.0;
+    if (finalPre !== undefined && finalPost !== undefined) {
+      if (100 - finalPre <= 0) {
+        nGain = finalPost >= 100 ? 1.0 : 0.0;
       } else {
-        nGain = Math.round(((postVal - preVal) / (100 - preVal)) * 100) / 100;
+        nGain = Math.round(((finalPost - finalPre) / (100 - finalPre)) * 100) / 100;
       }
     }
 
@@ -489,16 +702,16 @@ class DataService {
       Timestamp: payload.timestamp || payload.Timestamp || defaultTimestamp,
       NISN: payload.nisn || payload.NISN || this.currentStudent?.NISN || '-',
       Nama: payload.nama || payload.Nama || this.currentStudent?.Nama || 'Student',
-      Nilai_Pretest: preVal !== undefined ? preVal : 0,
-      Nilai_Posttest: postVal !== undefined ? postVal : (isPretestOnly ? '' : 0),
+      Nilai_Pretest: finalPre !== undefined ? finalPre : 0,
+      Nilai_Posttest: finalPost !== undefined ? finalPost : (isPretestOnly ? '' : 0),
       Total_Skor: totalVal,
-      Peningkatan: (preVal !== undefined && postVal !== undefined) ? (postVal - preVal) : 0,
+      Peningkatan: (finalPre !== undefined && finalPost !== undefined) ? (finalPost - finalPre) : 0,
       Nilai_NGain: nGain,
       timestamp: payload.timestamp || defaultTimestamp,
       nisn: payload.nisn || this.currentStudent?.NISN || '-',
       nama: payload.nama || this.currentStudent?.Nama || 'Student',
-      nilaiPretest: preVal,
-      nilaiPosttest: postVal,
+      nilaiPretest: finalPre,
+      nilaiPosttest: finalPost,
       totalSkor: totalVal
     };
 
@@ -510,8 +723,8 @@ class DataService {
         nis: payload.nis || this.currentStudent?.NIS || '',
         nama: record.Nama,
         kelas: payload.kelas || this.currentStudent?.Kelas || '',
-        nilaiPretest: preVal,
-        nilaiPosttest: postVal,
+        nilaiPretest: finalPre,
+        nilaiPosttest: finalPost,
         totalSkor: totalVal
       };
 
@@ -556,7 +769,7 @@ class DataService {
       }
     }
 
-    // 3. Selalu perbarui cache leaderboard lokal
+    // 3. Selalu perbarui cache leaderboard lokal dengan skor tertinggi
     try {
       let localLb = [];
       const stored = safeStorage.getItem(STORAGE_KEYS.LEADERBOARD_LOCAL);
@@ -566,8 +779,29 @@ class DataService {
         localLb = [...this.data.leaderboard];
       }
 
+      const cleanNISN = String(record.NISN || record.nisn || '').trim();
+      const existingEntry = localLb.find(item => String(item.NISN || item.nisn).trim() === cleanNISN);
+      if (existingEntry) {
+        const oldPre = existingEntry.Nilai_Pretest ?? existingEntry.nilaiPretest;
+        const oldPost = existingEntry.Nilai_Posttest ?? existingEntry.nilaiPosttest;
+        if (oldPre !== undefined && oldPre !== null && !isNaN(Number(oldPre))) {
+          finalPre = (finalPre !== undefined) ? Math.max(finalPre, Number(oldPre)) : Number(oldPre);
+        }
+        if (oldPost !== undefined && oldPost !== null && !isNaN(Number(oldPost))) {
+          finalPost = (finalPost !== undefined) ? Math.max(finalPost, Number(oldPost)) : Number(oldPost);
+        }
+        record.Nilai_Pretest = finalPre !== undefined ? finalPre : 0;
+        record.nilaiPretest = finalPre;
+        if (finalPost !== undefined) {
+          record.Nilai_Posttest = finalPost;
+          record.nilaiPosttest = finalPost;
+          record.Total_Skor = finalPost;
+          record.totalSkor = finalPost;
+        }
+      }
+
       // Hapus entri lama dengan NISN yang sama jika ada, lalu tambahkan yang baru
-      localLb = localLb.filter(item => String(item.NISN || item.nisn).trim() !== String(record.NISN).trim());
+      localLb = localLb.filter(item => String(item.NISN || item.nisn).trim() !== cleanNISN);
       localLb.push(record);
 
       // Urutkan berdasarkan Total_Skor menurun, lalu Nilai_Posttest, lalu Nilai_Pretest

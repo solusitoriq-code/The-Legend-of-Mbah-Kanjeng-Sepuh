@@ -25,7 +25,7 @@
     rel="stylesheet">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=39">
+  <link rel="stylesheet" href="css/style.css?v=41">
 </head>
 
 <body>
@@ -63,13 +63,13 @@
           </div>
         </div>
 
-        <div class="splash-action-group" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          <button class="splash-btn-start" id="btn-start-splash" style="display: none;" title="Start Pretest">
+        <div class="splash-action-group" id="splash-action-group">
+          <button type="button" class="splash-btn-start" id="btn-start-splash" style="display: none;" title="Start Pretest">
             Start Pretest ➔
           </button>
           <button type="button" class="splash-btn-retake" id="btn-retake-pretest" style="display: none;"
-            title="Retake Pretest">
-            Retake Pretest
+            title="Pretest Lagi">
+            Pretest Lagi ↺
           </button>
         </div>
       </div>
@@ -292,7 +292,7 @@
 
           <!-- Wordwall Embedded Interactive Activity (Slide 4) -->
           <div class="wordwall-embed-wrapper" id="wordwall-embed-box-4">
-            <iframe id="wordwall-frame-4" data-src="https://wordwall.net/embed/play/119932/671/540?wwmethod=link"
+            <iframe id="wordwall-frame-4" data-src="https://wordwall.net/embed/play/119932/671/540?wwmethod=iframe"
               src="about:blank" title="Let's find me! - Wordwall Game" allowfullscreen allow="autoplay; fullscreen"
               loading="lazy">
             </iframe>
@@ -1482,9 +1482,122 @@
         </div>
       </article>
 
-      <!-- SLIDE 16: Closing / Terima Kasih -->
+      <!-- SLIDE 16: Glosarium — Single Card Slider (Slide 13 Style) -->
       <article class="slide-frame" data-slide="16">
-        <img class="slide-bg-img" src="assets/slides/slide_16.webp" alt="Slide 16 Closing" loading="lazy"
+        <img class="slide-bg-img" src="assets/slides/slide_16.webp" alt="Slide 16 Glosarium" loading="lazy" decoding="async">
+        <div class="interactive-overlay">
+          <!-- Area Navigasi Separuh Layar (Kiri & Kanan di Luar Tombol) -->
+          <div class="slide-half-nav slide-half-prev" data-goto="15" title="Back to Slide 15"></div>
+          <div class="slide-half-nav slide-half-next" data-goto="17" title="Next to Slide 17"></div>
+
+          <!-- Glosarium Single Card Slider (Slide 13 Style) -->
+          <div class="slide16-glossary-container" id="slide16-glossary-container">
+            
+            <!-- Tombol Geser Kiri (Prev Card) -->
+            <button type="button" class="slide16-slider-nav-btn prev" id="btn-slide16-prev-card"
+              title="Previous Word (←)" aria-label="Previous Word">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <!-- Card Glosarium Tunggal bergaya Slide 13 -->
+            <div class="slide16-card-viewport">
+              <div class="slide7-card slide13-card slide16-card active" id="slide16-card" tabindex="0" role="region"
+                aria-label="Glossary Vocabulary Card">
+                
+                <!-- Header Kartu: Badge Jenis Kata & Counter, Audio Button Play/Pause -->
+                <div class="slide7-card-header slide13-card-header slide16-card-header">
+                  <div class="slide16-badge-group">
+                    <span class="slide13-badge slide16-badge-type" id="slide16-badge-type">Noun</span>
+                    <span class="slide16-counter-pill" id="slide16-counter-pill">Word 1 of 16</span>
+                  </div>
+
+                  <div class="slide16-audio-ctrl">
+                    <button type="button" class="slide7-audio-btn slide13-audio-btn slide16-audio-btn"
+                      id="btn-slide16-audio" title="Play or Pause Pronunciation" aria-label="Play or Pause Pronunciation">
+                      <svg class="slide16-icon-play" id="slide16-icon-play" viewBox="0 0 24 24" width="14" height="14"
+                        fill="currentColor">
+                        <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                      </svg>
+                      <svg class="slide16-icon-pause" id="slide16-icon-pause" viewBox="0 0 24 24" width="14" height="14"
+                        fill="currentColor" style="display: none;">
+                        <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                        <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                      </svg>
+                    </button>
+                    <span class="slide16-audio-state-text" id="slide16-audio-state-text">Pronounce</span>
+                  </div>
+                </div>
+
+                <!-- Bagian Judul Kata & Simbol Fonetik -->
+                <div class="slide16-word-section">
+                  <h3 class="slide16-word-title" id="slide16-word-title">Protagonist</h3>
+                  <button type="button" class="slide16-phonetic-btn" id="btn-slide16-phonetic"
+                    title="Click to pronounce word">
+                    <span class="slide16-word-phonetic" id="slide16-word-phonetic">/prəˈtæɡ.ə.nɪst/</span>
+                  </button>
+                </div>
+
+                <!-- Isi Kartu: Definisi Bahasa Inggris, Arti Bahasa Indonesia, Contoh Kalimat -->
+                <div class="slide7-card-body slide13-card-body slide16-card-body">
+                  <!-- English Meaning -->
+                  <div class="slide16-meaning-box">
+                    <span class="slide16-box-label">English Meaning:</span>
+                    <p class="slide13-card-desc slide16-meaning-en" id="slide16-meaning-en">
+                      The main or central character in a story, play, or narrative.
+                    </p>
+                  </div>
+
+                  <!-- Indonesian Meaning -->
+                  <div class="slide16-meaning-box slide16-meaning-box-id">
+                    <span class="slide16-box-label id-label">Arti (ID):</span>
+                    <p class="slide16-meaning-id" id="slide16-meaning-id">
+                      Tokoh utama dalam cerita naratif.
+                    </p>
+                  </div>
+
+                  <!-- Example Sentence -->
+                  <div class="slide16-example-box">
+                    <span class="slide16-box-label ex-label">Example:</span>
+                    <p class="slide16-example-text" id="slide16-example-text">
+                      "Kanjeng Sepuh is the benevolent protagonist of the legend."
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Indikator Dots Pagination di Bagian Bawah Kartu -->
+                <div class="slide16-dots-container" id="slide16-dots-container" role="tablist"
+                  aria-label="Glossary Pagination Dots">
+                  <!-- Diisi secara dinamis oleh JavaScript -->
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Tombol Geser Kanan (Next Card) -->
+            <button type="button" class="slide16-slider-nav-btn next" id="btn-slide16-next-card"
+              title="Next Word (→)" aria-label="Next Word">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+
+          </div>
+
+          <!-- Pojok Navigasi Konsisten dengan Slide Lainnya -->
+          <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
+          <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="15" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-next" data-goto="17" title="Next to Closing"></button>
+        </div>
+      </article>
+
+      <!-- SLIDE 17: Closing / Terima Kasih -->
+      <article class="slide-frame" data-slide="17">
+        <img class="slide-bg-img" src="assets/slides/slide_17.webp" alt="Slide 17 Closing" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
           <button class="btn-exit-slide" id="btn-restart-app" title="Exit"></button>
@@ -1493,7 +1606,7 @@
           </button>
           <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
           <button class="nav-corner-btn btn-nav-menu" data-drawer="true" title="Table of Contents"></button>
-          <button class="nav-corner-btn btn-nav-prev" data-goto="15" title="Back"></button>
+          <button class="nav-corner-btn btn-nav-prev" data-goto="16" title="Back to Glossary"></button>
         </div>
       </article>
 
@@ -1561,7 +1674,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <!-- Application Logic Modules -->
-  <script type="module" src="js/app.js?v=39"></script>
+  <script type="module" src="js/app.js?v=40"></script>
 
 </body>
 

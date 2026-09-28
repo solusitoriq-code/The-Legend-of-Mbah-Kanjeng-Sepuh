@@ -15,7 +15,8 @@ var SHEET_NAMES = {
   DATA_SISWA: 'Data_Siswa',
   SOAL_PRETEST: 'Soal_Pretest',
   SOAL_POSTTEST: 'Soal_Posttest',
-  LEADERBOARD: 'Leaderboard'
+  LEADERBOARD: 'Leaderboard',
+  GLOSSARY: 'Glossary'
 };
 
 /**
@@ -24,6 +25,7 @@ var SHEET_NAMES = {
  * - 'getData'        : Mengambil seluruh dataset (Siswa, Pretest, Posttest, Leaderboard)
  * - 'checkNISN'      : Validasi NIS atau NISN (?action=checkNISN&nisn=11486)
  * - 'getLeaderboard' : Mengambil data leaderboard terurut
+ * - 'getGlossary'    : Mengambil daftar kosakata dari sheet 'Glossary'
  */
 function doGet(e) {
   try {
@@ -37,6 +39,8 @@ function doGet(e) {
       return handleCheckNISN(query);
     } else if (action === 'getLeaderboard') {
       return handleGetLeaderboard();
+    } else if (action === 'getGlossary') {
+      return handleGetGlossary();
     }
 
     return createJsonResponse_({
@@ -45,7 +49,8 @@ function doGet(e) {
       endpoints: {
         getData: '?action=getData',
         checkNISN: '?action=checkNISN&nisn={NISN_ATAU_NIS}',
-        getLeaderboard: '?action=getLeaderboard'
+        getLeaderboard: '?action=getLeaderboard',
+        getGlossary: '?action=getGlossary'
       }
     });
   } catch (err) {
@@ -244,24 +249,55 @@ function saveScoreToLeaderboard_(payload) {
   if (colMap['Nilai_Remidi'] || colMap['Status']) {
     var updated = false;
     var nisnCol = colMap['NISN'] || 2;
+    var finalPre = pretest;
+    var finalPost = posttest;
 
     if (lastRow > 1 && nisn) {
       var nisnValues = sheet.getRange(2, nisnCol, lastRow - 1, 1).getValues();
       for (var r = 0; r < nisnValues.length; r++) {
         if (String(nisnValues[r][0]).trim() === nisn) {
           var targetRowIndex = r + 2;
-          if (pretest !== null && colMap['Nilai_Pretest']) sheet.getRange(targetRowIndex, colMap['Nilai_Pretest']).setValue(pretest);
-          if (posttest !== null && colMap['Nilai_Posttest']) {
-            sheet.getRange(targetRowIndex, colMap['Nilai_Posttest']).setValue(posttest);
-            if (colMap['Nilai_Remidi']) sheet.getRange(targetRowIndex, colMap['Nilai_Remidi']).setValue(75);
-            if (colMap['Status']) {
-              var fCol = String.fromCharCode(64 + (colMap['Nilai_Posttest'] || 6));
-              var gCol = String.fromCharCode(64 + (colMap['Nilai_Remidi'] || 7));
-              sheet.getRange(targetRowIndex, colMap['Status']).setFormula('=IF(' + fCol + targetRowIndex + '="","",IF(' + fCol + targetRowIndex + '>=' + gCol + targetRowIndex + ',"Lulus","Remidi"))');
+          var scoreUpdated = false;
+
+          // Cek Nilai Pretest: hanya simpan jika lebih tinggi
+          if (pretest !== null && colMap['Nilai_Pretest']) {
+            var currPre = sheet.getRange(targetRowIndex, colMap['Nilai_Pretest']).getValue();
+            var hasOldPre = currPre !== '' && currPre !== null && !isNaN(Number(currPre));
+            var oldPreVal = hasOldPre ? Number(currPre) : null;
+            if (oldPreVal === null || pretest > oldPreVal) {
+              sheet.getRange(targetRowIndex, colMap['Nilai_Pretest']).setValue(pretest);
+              finalPre = pretest;
+              scoreUpdated = true;
+            } else {
+              finalPre = oldPreVal;
             }
           }
-          if (colMap['Total_Skor']) sheet.getRange(targetRowIndex, colMap['Total_Skor']).setValue(total);
-          if (colMap['Timestamp']) sheet.getRange(targetRowIndex, colMap['Timestamp']).setValue(timestamp);
+
+          // Cek Nilai Posttest: hanya simpan jika lebih tinggi
+          if (posttest !== null && colMap['Nilai_Posttest']) {
+            var currPost = sheet.getRange(targetRowIndex, colMap['Nilai_Posttest']).getValue();
+            var hasOldPost = currPost !== '' && currPost !== null && !isNaN(Number(currPost));
+            var oldPostVal = hasOldPost ? Number(currPost) : null;
+            if (oldPostVal === null || posttest > oldPostVal) {
+              sheet.getRange(targetRowIndex, colMap['Nilai_Posttest']).setValue(posttest);
+              if (colMap['Nilai_Remidi']) sheet.getRange(targetRowIndex, colMap['Nilai_Remidi']).setValue(75);
+              if (colMap['Status']) {
+                var fCol = String.fromCharCode(64 + (colMap['Nilai_Posttest'] || 6));
+                var gCol = String.fromCharCode(64 + (colMap['Nilai_Remidi'] || 7));
+                sheet.getRange(targetRowIndex, colMap['Status']).setFormula('=IF(' + fCol + targetRowIndex + '="","",IF(' + fCol + targetRowIndex + '>=' + gCol + targetRowIndex + ',"Lulus","Remidi"))');
+              }
+              finalPost = posttest;
+              scoreUpdated = true;
+            } else {
+              finalPost = oldPostVal;
+            }
+          }
+
+          if (scoreUpdated) {
+            var highestTotal = finalPost !== null ? finalPost : (finalPre !== null ? finalPre : 0);
+            if (colMap['Total_Skor']) sheet.getRange(targetRowIndex, colMap['Total_Skor']).setValue(highestTotal);
+            if (colMap['Timestamp']) sheet.getRange(targetRowIndex, colMap['Timestamp']).setValue(timestamp);
+          }
           updated = true;
           break;
         }
@@ -288,16 +324,16 @@ function saveScoreToLeaderboard_(payload) {
 
     return {
       success: true,
-      message: updated ? 'Skor siswa berhasil diperbarui.' : 'Skor siswa baru berhasil ditambahkan.',
+      message: updated ? 'Skor siswa diproses (hanya skor tertinggi disimpan).' : 'Skor siswa baru berhasil ditambahkan.',
       record: {
         Timestamp: timestamp,
         NISN: nisn,
         Nama: nama,
-        Nilai_Pretest: pretest,
-        Nilai_Posttest: posttest,
+        Nilai_Pretest: finalPre,
+        Nilai_Posttest: finalPost,
         Nilai_Remidi: 75,
-        Status: posttest >= 75 ? 'Lulus' : 'Remidi',
-        Total_Skor: total
+        Status: (finalPost !== null && finalPost >= 75) ? 'Lulus' : (finalPost !== null ? 'Remidi' : ''),
+        Total_Skor: finalPost !== null ? finalPost : (finalPre !== null ? finalPre : 0)
       }
     };
   }
@@ -314,24 +350,64 @@ function saveScoreToLeaderboard_(payload) {
     'Nilai_NGain'
   ];
 
-  var rowData = [
-    timestamp,
-    nisn,
-    nama,
-    pretest,
-    posttest,
-    total,
-    peningkatan,
-    nGain
-  ];
-
   var updatedLegacy = false;
+  var finalLegacyPre = pretest;
+  var finalLegacyPost = posttest;
+
   if (lastRow > 1 && nisn) {
     var nisnValues = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
     for (var r = 0; r < nisnValues.length; r++) {
       if (String(nisnValues[r][0]).trim() === nisn) {
         var targetRowIndex = r + 2;
-        sheet.getRange(targetRowIndex, 1, 1, headers.length).setValues([rowData]);
+        var existingRowValues = sheet.getRange(targetRowIndex, 1, 1, headers.length).getValues()[0];
+        var oldPre = (existingRowValues[3] !== '' && !isNaN(Number(existingRowValues[3]))) ? Number(existingRowValues[3]) : null;
+        var oldPost = (existingRowValues[4] !== '' && !isNaN(Number(existingRowValues[4]))) ? Number(existingRowValues[4]) : null;
+
+        var scoreImproved = false;
+        if (pretest !== null) {
+          if (oldPre === null || pretest > oldPre) {
+            finalLegacyPre = pretest;
+            scoreImproved = true;
+          } else {
+            finalLegacyPre = oldPre;
+          }
+        } else {
+          finalLegacyPre = oldPre;
+        }
+
+        if (posttest !== null) {
+          if (oldPost === null || posttest > oldPost) {
+            finalLegacyPost = posttest;
+            scoreImproved = true;
+          } else {
+            finalLegacyPost = oldPost;
+          }
+        } else {
+          finalLegacyPost = oldPost;
+        }
+
+        var legacyTotal = finalLegacyPost !== null ? finalLegacyPost : (finalLegacyPre !== null ? finalLegacyPre : 0);
+        var legacyPeningkatan = (finalLegacyPost !== null && finalLegacyPre !== null) ? (finalLegacyPost - finalLegacyPre) : 0;
+        var legacyNGain = 0;
+        if (finalLegacyPost !== null && finalLegacyPre !== null) {
+          if (100 - finalLegacyPre <= 0) {
+            legacyNGain = finalLegacyPost >= 100 ? 1.0 : 0.0;
+          } else {
+            legacyNGain = Math.round(((finalLegacyPost - finalLegacyPre) / (100 - finalLegacyPre)) * 100) / 100;
+          }
+        }
+
+        var mergedRow = [
+          scoreImproved ? timestamp : existingRowValues[0],
+          nisn,
+          nama,
+          finalLegacyPre,
+          finalLegacyPost,
+          legacyTotal,
+          legacyPeningkatan,
+          legacyNGain
+        ];
+        sheet.getRange(targetRowIndex, 1, 1, headers.length).setValues([mergedRow]);
         updatedLegacy = true;
         break;
       }
@@ -339,6 +415,16 @@ function saveScoreToLeaderboard_(payload) {
   }
 
   if (!updatedLegacy) {
+    var rowData = [
+      timestamp,
+      nisn,
+      nama,
+      pretest,
+      posttest,
+      total,
+      peningkatan,
+      nGain
+    ];
     sheet.appendRow(rowData);
   }
 
@@ -348,15 +434,15 @@ function saveScoreToLeaderboard_(payload) {
 
   return {
     success: true,
-    message: updatedLegacy ? 'Skor siswa berhasil diperbarui.' : 'Skor siswa baru berhasil ditambahkan.',
+    message: updatedLegacy ? 'Skor siswa diproses (hanya skor tertinggi disimpan).' : 'Skor siswa baru berhasil ditambahkan.',
     record: {
       Timestamp: timestamp,
       NISN: nisn,
       Nama: nama,
-      Nilai_Pretest: pretest,
-      Nilai_Posttest: posttest,
-      Total_Skor: total,
-      Peningkatan: peningkatan,
+      Nilai_Pretest: finalLegacyPre,
+      Nilai_Posttest: finalLegacyPost,
+      Total_Skor: finalLegacyPost !== null ? finalLegacyPost : (finalLegacyPre !== null ? finalLegacyPre : 0),
+      Peningkatan: (finalLegacyPost !== null && finalLegacyPre !== null) ? (finalLegacyPost - finalLegacyPre) : 0,
       Nilai_NGain: nGain
     }
   };
@@ -443,6 +529,73 @@ function getLeaderboardData_(sheet) {
   });
 
   return workingList;
+}
+
+/**
+ * Mengambil daftar kosakata dari sheet 'Glossary'
+ */
+function handleGetGlossary() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAMES.GLOSSARY);
+
+  // Inisialisasi sheet Glossary jika belum ada
+  if (!sheet) {
+    sheet = populateGlossarySheet_(ss);
+  }
+
+  var glossary = getSheetRowsAsJson_(sheet);
+  return createJsonResponse_({
+    success: true,
+    glossary: glossary
+  });
+}
+
+/**
+ * Membuat dan mengisi sheet 'Glossary' dengan 16 kosakata dari Glossary.docx
+ */
+function populateGlossarySheet_(ss) {
+  var sheet = ss.insertSheet(SHEET_NAMES.GLOSSARY);
+
+  var headers = ['No', 'Kata', 'Pronounsiasi', 'Jenis_Kata', 'English_Meaning', 'Arti_ID', 'Contoh_Kalimat'];
+  sheet.appendRow(headers);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#1a237e').setFontColor('#ffffff');
+
+  var data = [
+    [1, 'Protagonist', '/ˈproʊ.tæɡ.ə.nɪst/', 'Noun', 'The main or central character in a story, play, or narrative.', 'Tokoh utama dalam cerita naratif.', 'Kanjeng Sepuh is the benevolent protagonist of the legend.'],
+    [2, 'Drought', '/draʊt/', 'Noun', 'A prolonged period of abnormally low rainfall leading to a severe shortage of water.', 'Bencana kekeringan / musim kemarau panjang yang parah.', 'A severe drought destroyed the farms along the Lamongan-Tuban border.'],
+    [3, 'Disruption', '/dɪsˈrʌp.ʃən/', 'Noun', 'A disturbance or problem that interrupts an event, activity, or continuous peaceful state.', 'Gangguan / kekacauan yang merusak ketentraman.', 'Unfair colonial taxes caused severe economic disruption for native merchants.'],
+    [4, 'Excavate', '/ˈek.skə.veɪt/', 'Verb', 'To make a hole or channel by digging out earth, stone, or sand.', 'Menggali / mengeruk tanah.', 'Kanjeng Sepuh excavated a vital canal known as Kalibela.'],
+    [5, 'Confront', '/kənˈfrʌnt/', 'Verb', 'To face, meet, or stand up to someone or something in an assertive or courageous way.', 'Menghadapi secara berani / menentang secara langsung.', 'He confronted the colonial officers without any fear.'],
+    [6, 'Relic', '/ˈrel.ɪk/', 'Noun', 'An object, structure, or custom that has survived from an earlier historical era.', 'Peninggalan bersejarah / artefak peninggalan masa lampau.', 'The sacred spring of Telaga Rambit remains an enduring historical relic.'],
+    [7, 'Enduring', '/ɪnˈdjʊər.ɪŋ/', 'Adjective', 'Lasting for a very long time; continuing or long-lived across generations.', 'Abadi / bertahan lama melintasi zaman.', 'His moral teachings left an enduring legacy in Sedayu.'],
+    [8, 'Humility', '/hjuːˈmɪl.ɪ.ti/', 'Noun', 'The quality of being modest, respectful, and not considering oneself better than others.', 'Kerendahan hati / sikap tidak sombong.', 'Despite his royal background, he showed great humility toward the farmers.'],
+    [9, 'Decree', '/dɪˈkriː/', 'Noun', 'An official order, command, or legal proclamation issued by an authority or ruler.', 'Surat ketetapan / titah resmi / surat perintah penguasa.', 'He firmly pushed aside the unfair tax decree.'],
+    [10, 'Steed', '/stiːd/', 'Noun', 'A noble, high-spirited, or well-trained horse used for riding.', 'Kuda tunggangan yang gagah / luhur.', 'He entrusted his noble steeds to Kyai Jayeng Katon in Ujungpangkah.'],
+    [11, 'Vanity', '/ˈvæn.ɪ.ti/', 'Noun', 'Excessive pride in one\'s own appearance, status, abilities, or achievements.', 'Kesombongan / kebanggaan diri yang berlebihan / kepamrihan.', 'He stated that a throne is not for personal vanity.'],
+    [12, 'Subjugation', '/ˌsʌb.dʒʊˈɡeɪ.ʃən/', 'Noun', 'The act of conquering, defeating, or bringing someone under complete political or military control.', 'Penaklukan / penundukan / penindasan kekuasaan.', 'The local community resisted foreign subjugation.'],
+    [13, 'Overflow', '/ˌoʊ.vəˈfloʊ/', 'Verb', 'To flow over the brim, edges, or limits because of excess liquid.', 'Meluap / memancar berlimpah-limpah.', 'The fresh springs overflowed, supplying water to thousands of villagers.'],
+    [14, 'Takeaway', '/ˈteɪk.ə.weɪ/', 'Noun', 'A key fact, message, or moral point to be remembered from an event or story.', 'Pesan inti / pelajaran moral yang dipetik dari suatu peristiwa.', 'The primary takeaway of this legend is to lead with compassion and serve the weak.'],
+    [15, 'Reconcile', '/ˈrek.ən.saɪl/', 'Verb', 'To restore friendly relations and settle differences between opposing parties.', 'Mendamaikan / mempertemukan dua pihak yang berselisih.', 'The canal effectively reconciled the two neighboring villages.'],
+    [16, 'Benevolent', '/bɪˈnev.əl.ənt/', 'Adjective', 'Kind, generous, well-meaning, and actively dedicated to doing good for others.', 'Penuh kebajikan / suka menolong / berhati mulia dan penyayang kepada rakyat.', 'Kanjeng Sepuh was remembered as a benevolent leader who protected the vulnerable.']
+  ];
+
+  sheet.getRange(2, 1, data.length, headers.length).setValues(data);
+  sheet.setColumnWidth(1, 40);   // No
+  sheet.setColumnWidth(2, 120);  // Kata
+  sheet.setColumnWidth(3, 150);  // Pronounsiasi
+  sheet.setColumnWidth(4, 90);   // Jenis Kata
+  sheet.setColumnWidth(5, 320);  // English Meaning
+  sheet.setColumnWidth(6, 260);  // Arti ID
+  sheet.setColumnWidth(7, 340);  // Contoh Kalimat
+
+  // Alternating row colors
+  for (var i = 2; i <= data.length + 1; i++) {
+    var bg = (i % 2 === 0) ? '#e8eaf6' : '#ffffff';
+    sheet.getRange(i, 1, 1, headers.length).setBackground(bg);
+  }
+
+  sheet.setFrozenRows(1);
+  return sheet;
 }
 
 /**
