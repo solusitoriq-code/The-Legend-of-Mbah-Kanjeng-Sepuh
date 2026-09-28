@@ -23,4 +23,5 @@ Pedoman komunikasi, penulisan kode, dan dokumentasi pada proyek ini:
 - Konfigurasikan header `Cache-Control` jangka panjang (`max-age=31536000, immutable`) pada `vercel.json` untuk semua aset statis di direktori `assets/`.
 - Hindari pemblokiran proses render (*render-blocking*), seperti pemanggilan `@import` font di dalam berkas CSS; gunakan `<link rel="preconnect">` dan `<link rel="stylesheet">` di dalam dokumen HTML.
 - Rutin lakukan pembersihan *dead code*, berkas skrip yang tidak digunakan, serta pisahkan berkas pengujian lokal (`server.js`) dari target deployment melalui `.vercelignore`.
+- Cegah pemborosan kuota build Vercel Hobby (batas deployment bulanan/harian): pembaruan yang hanya mencakup dokumentasi (`.md`, pedoman kerja) wajib disaring via `ignoreCommand` pada `vercel.json` atau menggunakan tag `[skip ci]` / `[skip vercel]` pada pesan commit Git agar tidak memicu build baru.
 
