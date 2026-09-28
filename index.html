@@ -24,8 +24,11 @@
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
 
+  <!-- Google Model Viewer (3D & AR Engine) -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=41">
+  <link rel="stylesheet" href="css/style.css?v=43">
 </head>
 
 <body>
@@ -1140,51 +1143,186 @@
         </div>
       </article>
 
-      <!-- SLIDE 14: Edukasi Erupsi Gunung Berapi -->
+      <!-- SLIDE 14: 3D Interactive Historical Relic - Situs Kanjeng Sepuh -->
       <article class="slide-frame" data-slide="14">
-        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 Volcanic Education" loading="lazy"
+        <img class="slide-bg-img" src="assets/slides/slide_14.webp" alt="Slide 14 3D Historical Relic Situs Kanjeng Sepuh" loading="lazy"
           decoding="async">
         <div class="interactive-overlay">
           <!-- Navigation Half Areas -->
           <div class="slide-half-nav slide-half-prev" data-goto="13" title="Back to Slide 13"></div>
           <div class="slide-half-nav slide-half-next" data-goto="15" title="Go to Slide 15"></div>
 
-          <!-- Educational Whiteboard Content -->
-          <div class="slide14-edu-board">
-            <div class="edu-board-header">
-              <span class="edu-board-tag">Enrichment Material</span>
-              <h3 class="edu-board-title">Characteristics &amp; Volcanic Benefits</h3>
+          <!-- 3D Interactive Screen Container -->
+          <div class="situs-3d-wrapper" id="situs-3d-box">
+            
+            <!-- Google Model Viewer Engine -->
+            <model-viewer id="situs-viewer"
+              data-src="assets/situs_ks.glb"
+              src="assets/situs_ks.glb"
+              camera-controls
+              touch-action="pan-y"
+              auto-rotate
+              auto-rotate-delay="2500"
+              rotation-per-second="14deg"
+              interaction-prompt="auto"
+              camera-orbit="38deg 74deg 2.2m"
+              min-camera-orbit="auto auto 1.1m"
+              max-camera-orbit="auto auto 4.2m"
+              field-of-view="32deg"
+              shadow-intensity="1.2"
+              shadow-softness="0.7"
+              environment-image="neutral"
+              exposure="1.05"
+              ar
+              ar-modes="webxr scene-viewer quick-look"
+              alt="3D Interactive Model of Situs Kanjeng Sepuh"
+              loading="lazy"
+              reveal="auto">
+
+              <!-- Hotspot 1: Meru Roof Apex -->
+              <button type="button" class="situs-hotspot" slot="hotspot-1"
+                data-position="0.22m 0.28m -0.05m" data-normal="0m 1m 0m" data-point="1"
+                title="Point 1: Meru Roof Apex" aria-label="Point 1: Meru Roof Apex">
+                <span class="hotspot-pin">1</span>
+                <span class="hotspot-ripple"></span>
+              </button>
+
+              <!-- Hotspot 2: Main Gateway Entrance -->
+              <button type="button" class="situs-hotspot" slot="hotspot-2"
+                data-position="0.08m 0.02m 0.02m" data-normal="0m 0m 1m" data-point="2"
+                title="Point 2: Main Gateway Entrance" aria-label="Point 2: Main Gateway Entrance">
+                <span class="hotspot-pin">2</span>
+                <span class="hotspot-ripple"></span>
+              </button>
+
+              <!-- Hotspot 3: Rubble Pile -->
+              <button type="button" class="situs-hotspot" slot="hotspot-3"
+                data-position="0.12m -0.22m 0.14m" data-normal="0m 1m 0m" data-point="3"
+                title="Point 3: Rubble Pile" aria-label="Point 3: Rubble Pile">
+                <span class="hotspot-pin">3</span>
+                <span class="hotspot-ripple"></span>
+              </button>
+
+              <!-- Hotspot 4: Structural Cracks & Damage -->
+              <button type="button" class="situs-hotspot" slot="hotspot-4"
+                data-position="-0.24m 0.05m 0.12m" data-normal="-1m 0m 0m" data-point="4"
+                title="Point 4: Structural Cracks & Damage" aria-label="Point 4: Structural Cracks & Damage">
+                <span class="hotspot-pin">4</span>
+                <span class="hotspot-ripple"></span>
+              </button>
+
+              <!-- Hotspot 5: Pillar Wall & Foundation -->
+              <button type="button" class="situs-hotspot" slot="hotspot-5"
+                data-position="0.05m -0.29m 0.22m" data-normal="0m 0m 1m" data-point="5"
+                title="Point 5: Pillar Wall & Foundation" aria-label="Point 5: Pillar Wall & Foundation">
+                <span class="hotspot-pin">5</span>
+                <span class="hotspot-ripple"></span>
+              </button>
+
+              <!-- Hotspot 6: Modern Conservation Context -->
+              <button type="button" class="situs-hotspot" slot="hotspot-6"
+                data-position="0.28m -0.26m 0.20m" data-normal="0m 1m 0m" data-point="6"
+                title="Point 6: Modern Conservation Context" aria-label="Point 6: Modern Conservation Context">
+                <span class="hotspot-pin">6</span>
+                <span class="hotspot-ripple"></span>
+              </button>
+
+              <!-- Loading Indicator Slot -->
+              <div slot="poster" class="situs-loading-overlay" id="situs-loading-box">
+                <div class="situs-loader-spinner"></div>
+                <span class="situs-loader-text" id="situs-loader-text">Loading 3D Historical Relic...</span>
+              </div>
+
+              <!-- Progress Bar Slot -->
+              <div class="situs-progress-bar hide" slot="progress-bar" id="situs-progress-bar">
+                <div class="situs-update-bar" id="situs-update-bar"></div>
+              </div>
+            </model-viewer>
+
+            <!-- Top Header & Control Toolbar -->
+            <div class="situs-top-bar">
+              <div class="situs-badge-title">
+                <span class="situs-live-dot"></span>
+                <span class="situs-header-text">Historical Relic 3D • Situs Kanjeng Sepuh</span>
+              </div>
+              <div class="situs-toolbar-actions">
+                <button type="button" class="situs-tool-btn" id="btn-situs-autorotate" title="Toggle Auto-Rotate" aria-label="Toggle Auto-Rotate">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                  <span class="tool-label">Rotate</span>
+                </button>
+                <button type="button" class="situs-tool-btn" id="btn-situs-reset" title="Reset View" aria-label="Reset View">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
+                  <span class="tool-label">Reset</span>
+                </button>
+                <button type="button" class="situs-tool-btn situs-btn-ar" id="btn-situs-ar" title="View in Augmented Reality" aria-label="View in Augmented Reality">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                  <span class="tool-label">View AR</span>
+                </button>
+              </div>
             </div>
-            <div class="edu-board-grid">
-              <div class="edu-point-item">
-                <div class="edu-point-num">1</div>
-                <div class="edu-point-body">
-                  <strong>Magma &amp; Lava:</strong> Magma is stored hot within the Earth's crust; once it reaches the
-                  surface of mountain slopes, it is called <em>Lava</em>.
+
+            <!-- Floating Info Card (Glassmorphism Panel) -->
+            <div class="situs-info-card" id="situs-info-card" style="display: none;" role="region" aria-label="Point Details">
+              <div class="situs-card-header">
+                <div class="situs-card-badge-wrap">
+                  <span class="situs-card-badge" id="situs-card-badge">Point 1</span>
+                  <span class="situs-card-sub" id="situs-card-sub">Key Architecture</span>
                 </div>
+                <button type="button" class="situs-card-close" id="btn-close-situs-card" title="Close Details" aria-label="Close Details">✕</button>
               </div>
-              <div class="edu-point-item">
-                <div class="edu-point-num">2</div>
-                <div class="edu-point-body">
-                  <strong>Fertile Soil:</strong> Volcanic ash deposits are rich in essential mineral nutrients that
-                  fertilize agricultural lands.
-                </div>
-              </div>
-              <div class="edu-point-item">
-                <div class="edu-point-num">3</div>
-                <div class="edu-point-body">
-                  <strong>Geothermal Energy:</strong> Geothermal steam from volcanic systems is harnessed for
-                  eco-friendly power generation.
-                </div>
-              </div>
-              <div class="edu-point-item">
-                <div class="edu-point-num">4</div>
-                <div class="edu-point-body">
-                  <strong>Disaster Mitigation:</strong> Understanding pyroclastic flow directions and following
-                  evacuation route maps during eruption alert statuses.
-                </div>
+              <h4 class="situs-card-title" id="situs-card-title">Meru Roof Apex</h4>
+              <p class="situs-card-desc" id="situs-card-desc">The three-tiered top structure symbolizing the sacred mountain.</p>
+              <div class="situs-card-footer">
+                <button type="button" class="situs-audio-btn" id="btn-situs-audio" title="Listen to Pronunciation" aria-label="Listen to Pronunciation">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                  </svg>
+                  <span>Listen</span>
+                </button>
+                <div class="situs-counter-pill" id="situs-counter-pill">1 / 6</div>
               </div>
             </div>
+
+            <!-- Bottom Point Selector Strip (Quick 1-6 Dock) -->
+            <div class="situs-bottom-strip" id="situs-bottom-strip" role="tablist" aria-label="Educational Points 1 to 6">
+              <button type="button" class="situs-strip-pill" data-point="1" title="Point 1: Meru Roof Apex">
+                <span class="pill-num">1</span>
+                <span class="pill-text">Roof Apex</span>
+              </button>
+              <button type="button" class="situs-strip-pill" data-point="2" title="Point 2: Main Gateway Entrance">
+                <span class="pill-num">2</span>
+                <span class="pill-text">Main Gate</span>
+              </button>
+              <button type="button" class="situs-strip-pill" data-point="3" title="Point 3: Rubble Pile">
+                <span class="pill-num">3</span>
+                <span class="pill-text">Rubble Pile</span>
+              </button>
+              <button type="button" class="situs-strip-pill" data-point="4" title="Point 4: Structural Cracks">
+                <span class="pill-num">4</span>
+                <span class="pill-text">Cracks &amp; Damage</span>
+              </button>
+              <button type="button" class="situs-strip-pill" data-point="5" title="Point 5: Pillar &amp; Foundation">
+                <span class="pill-num">5</span>
+                <span class="pill-text">Foundation</span>
+              </button>
+              <button type="button" class="situs-strip-pill" data-point="6" title="Point 6: Conservation Context">
+                <span class="pill-num">6</span>
+                <span class="pill-text">Conservation</span>
+              </button>
+            </div>
+
           </div>
 
           <button class="nav-corner-btn btn-nav-home" data-goto="3" title="Main Menu"></button>
@@ -1674,7 +1812,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <!-- Application Logic Modules -->
-  <script type="module" src="js/app.js?v=40"></script>
+  <script type="module" src="js/app.js?v=43"></script>
 
 </body>
 

@@ -16,7 +16,7 @@ const SLIDE_DIRECTORY = [
   { id: 11, title: 'Language Features' },
   { id: 12, title: 'Video: The Legend of Mbah Kanjeng Sepuh' },
   { id: 13, title: 'Story: Raden Suryodiningrat' },
-  { id: 14, title: 'Education: Volcanic Eruptions' },
+  { id: 14, title: 'Augmented Reality (AR)' },
   { id: 15, title: 'Evaluation Quiz (Post-test)' },
   { id: 16, title: 'Glossary (Vocabulary)' },
   { id: 17, title: 'Closing' }
@@ -627,14 +627,8 @@ class InteractivePresentationApp {
       });
     }
 
-    // Slide 14 Sketchfab / AR Model
-    const btnSketchfab = document.getElementById('btn-sketchfab-toggle');
-    if (btnSketchfab) {
-      btnSketchfab.addEventListener('click', () => {
-        sound.playClick();
-        window.open('https://skfb.ly/6ZQ7z', '_blank');
-      });
-    }
+    // Slide 14: 3D Interactive Model of Situs Kanjeng Sepuh
+    this.initSlide14Situs3D();
 
     // Slide 15 Post-test Launch & Controls (Fase 5)
     if (this.btnLaunchQuiz) {
@@ -1257,6 +1251,30 @@ class InteractivePresentationApp {
       } else {
         if (wordwallFrame.src && !wordwallFrame.src.includes('about:blank')) {
           wordwallFrame.src = 'about:blank';
+        }
+      }
+    }
+
+    // Slide 11 or 12: Trigger Proximity Background Prefetch of 3D Model (AGENTS.md Compliant)
+    if (slideNumber === 11 || slideNumber === 12) {
+      this.prefetchSitusModel();
+    }
+
+    // Manage Slide 14 3D Historical Relic lifecycle
+    const situsViewer = document.getElementById('situs-viewer');
+    if (situsViewer) {
+      if (slideNumber === 14) {
+        if (!situsViewer.getAttribute('src')) {
+          situsViewer.setAttribute('src', situsViewer.dataset.src || 'assets/situs_ks.glb');
+        }
+        situsViewer.autoRotate = true;
+        if (typeof situsViewer.dismissPoster === 'function') {
+          situsViewer.dismissPoster();
+        }
+      } else {
+        situsViewer.autoRotate = false;
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
         }
       }
     }
@@ -3826,6 +3844,274 @@ class InteractivePresentationApp {
       this.quizModal.style.display = 'flex';
     }
     this.updateSlide15UI();
+  }
+
+  // --- Slide 14: 3D Historical Relic & 6 Educational Points ---
+  prefetchSitusModel() {
+    if (this.situsModelPrefetched) return;
+    this.situsModelPrefetched = true;
+    const modelUrl = 'assets/situs_ks.glb';
+
+    const executePrefetch = () => {
+      if ('fetch' in window) {
+        fetch(modelUrl, { priority: 'low' })
+          .then(() => console.log('[Prefetch] assets/situs_ks.glb cached quietly in background.'))
+          .catch(() => {});
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = modelUrl;
+        document.head.appendChild(link);
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(executePrefetch, { timeout: 3500 });
+    } else {
+      setTimeout(executePrefetch, 800);
+    }
+  }
+
+  initSlide14Situs3D() {
+    const viewer = document.getElementById('situs-viewer');
+    if (!viewer) return;
+
+    const infoCard = document.getElementById('situs-info-card');
+    const cardTitle = document.getElementById('situs-card-title');
+    const cardBadge = document.getElementById('situs-card-badge');
+    const cardSub = document.getElementById('situs-card-sub');
+    const cardDesc = document.getElementById('situs-card-desc');
+    const cardCounter = document.getElementById('situs-counter-pill');
+    const btnCloseCard = document.getElementById('btn-close-situs-card');
+    const btnAudio = document.getElementById('btn-situs-audio');
+    const btnAutoRotate = document.getElementById('btn-situs-autorotate');
+    const btnReset = document.getElementById('btn-situs-reset');
+    const btnAR = document.getElementById('btn-situs-ar');
+    const progressBar = document.getElementById('situs-progress-bar');
+    const updateBar = document.getElementById('situs-update-bar');
+    const loadingBox = document.getElementById('situs-loading-box');
+    const stripPills = document.querySelectorAll('.situs-strip-pill');
+    const hotspots = document.querySelectorAll('.situs-hotspot');
+
+    const SITUS_POINTS_DATA = [
+      {
+        id: 1,
+        title: "Meru Roof Apex",
+        badge: "Point 1",
+        sub: "Sacred Symbol",
+        desc: "The three-tiered top structure symbolizing the sacred mountain, reflecting classical Hindu-Javanese cosmological architecture.",
+        audioText: "Point 1: Meru Roof Apex. The three-tiered top structure symbolizing the sacred mountain.",
+        orbit: "35deg 65deg 1.85m",
+        target: "0.22m 0.28m -0.05m"
+      },
+      {
+        id: 2,
+        title: "Main Gateway Entrance",
+        badge: "Point 2",
+        sub: "Candi Bentar",
+        desc: "The reconstructed central entrance of the main split gate (Candi Bentar), forming a ceremonial passageway between realms.",
+        audioText: "Point 2: Main Gateway Entrance. The reconstructed central entrance of the main split gate, Candi Bentar.",
+        orbit: "15deg 78deg 1.9m",
+        target: "0.08m 0.02m 0.02m"
+      },
+      {
+        id: 3,
+        title: "Rubble Pile",
+        badge: "Point 3",
+        sub: "Historical Debris",
+        desc: "Remnants of original red-brick material that have fallen and accumulated across centuries of environmental exposure.",
+        audioText: "Point 3: Rubble Pile. Remnants of original material that have fallen and accumulated.",
+        orbit: "25deg 82deg 1.65m",
+        target: "0.12m -0.22m 0.14m"
+      },
+      {
+        id: 4,
+        title: "Structural Cracks & Damage",
+        badge: "Point 4",
+        sub: "Weathering Signs",
+        desc: "Visible structural fractures and weathering signs resulting from tectonic tremors and natural aging over centuries.",
+        audioText: "Point 4: Structural Cracks and Damage. Signs of wear, weathering, and damage accumulated over centuries.",
+        orbit: "-40deg 76deg 1.75m",
+        target: "-0.24m 0.05m 0.12m"
+      },
+      {
+        id: 5,
+        title: "Pillar Wall & Foundation",
+        badge: "Point 5",
+        sub: "Basal Relief",
+        desc: "Side retaining walls and the supporting basal foundation adorned with classic relief carvings honoring ancient craftsmanship.",
+        audioText: "Point 5: Pillar Wall and Foundation. Side walls and the supporting base of the structure.",
+        orbit: "20deg 85deg 1.65m",
+        target: "0.05m -0.29m 0.22m"
+      },
+      {
+        id: 6,
+        title: "Modern Conservation Context",
+        badge: "Point 6",
+        sub: "Heritage Preservation",
+        desc: "Active documentation, archaeological survey, and modern protective sheltering safeguarding the relic for future generations.",
+        audioText: "Point 6: Modern Conservation Context. Active documentation and archaeological heritage preservation practices.",
+        orbit: "48deg 80deg 1.75m",
+        target: "0.28m -0.26m 0.20m"
+      }
+    ];
+
+    let currentPointId = null;
+
+    // Loading progress event
+    viewer.addEventListener('progress', (e) => {
+      const progress = e.detail.totalProgress;
+      if (updateBar) {
+        updateBar.style.width = `${Math.round(progress * 100)}%`;
+      }
+      if (progress >= 1 && progressBar) {
+        progressBar.classList.add('hide');
+      }
+    });
+
+    viewer.addEventListener('load', () => {
+      console.log('[ModelViewer] 3D Model loaded successfully.');
+      if (typeof viewer.dismissPoster === 'function') {
+        viewer.dismissPoster();
+      }
+      if (loadingBox) loadingBox.style.display = 'none';
+      if (progressBar) progressBar.classList.add('hide');
+    });
+
+    viewer.addEventListener('error', (err) => {
+      console.error('[ModelViewer Error]', err);
+      const loaderText = document.getElementById('situs-loader-text');
+      if (loaderText) {
+        loaderText.textContent = 'Failed to load 3D model.';
+      }
+    });
+
+    const selectPoint = (pointId) => {
+      const point = SITUS_POINTS_DATA.find(p => p.id === Number(pointId));
+      if (!point) return;
+
+      currentPointId = point.id;
+      sound.playPop();
+
+      // Update hotspot active state
+      hotspots.forEach(h => {
+        h.classList.toggle('active', Number(h.dataset.point) === point.id);
+      });
+
+      // Update bottom strip active state
+      stripPills.forEach(p => {
+        p.classList.toggle('active', Number(p.dataset.point) === point.id);
+      });
+
+      // Camera transition
+      if (viewer.cameraOrbit && point.orbit) {
+        viewer.cameraOrbit = point.orbit;
+      }
+      if (viewer.cameraTarget && point.target) {
+        viewer.cameraTarget = point.target;
+      }
+
+      // Populate info card
+      if (cardTitle) cardTitle.textContent = point.title;
+      if (cardBadge) cardBadge.textContent = point.badge;
+      if (cardSub) cardSub.textContent = point.sub;
+      if (cardDesc) cardDesc.textContent = point.desc;
+      if (cardCounter) cardCounter.textContent = `${point.id} / ${SITUS_POINTS_DATA.length}`;
+
+      if (infoCard) {
+        infoCard.style.display = 'block';
+      }
+    };
+
+    // Hotspot click events
+    hotspots.forEach(h => {
+      h.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectPoint(h.dataset.point);
+      });
+    });
+
+    // Strip pill click events
+    stripPills.forEach(p => {
+      p.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectPoint(p.dataset.point);
+      });
+    });
+
+    // Close info card
+    if (btnCloseCard) {
+      btnCloseCard.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.playClick();
+        if (infoCard) infoCard.style.display = 'none';
+        hotspots.forEach(h => h.classList.remove('active'));
+        stripPills.forEach(p => p.classList.remove('active'));
+        currentPointId = null;
+        if (viewer) {
+          viewer.cameraOrbit = '38deg 74deg 2.2m';
+          viewer.cameraTarget = 'auto auto auto';
+        }
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      });
+    }
+
+    // Audio narration TTS button
+    if (btnAudio) {
+      btnAudio.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.playClick();
+        const point = SITUS_POINTS_DATA.find(p => p.id === currentPointId);
+        if (!point) return;
+
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(point.audioText || point.desc);
+          utterance.lang = 'en-US';
+          utterance.rate = 0.95;
+          window.speechSynthesis.speak(utterance);
+        }
+      });
+    }
+
+    // Auto-rotate toggle
+    if (btnAutoRotate) {
+      btnAutoRotate.addEventListener('click', () => {
+        sound.playClick();
+        viewer.autoRotate = !viewer.autoRotate;
+        const label = btnAutoRotate.querySelector('.tool-label');
+        if (label) {
+          label.textContent = viewer.autoRotate ? 'Pause' : 'Rotate';
+        }
+      });
+    }
+
+    // Reset camera button
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        sound.playClick();
+        viewer.cameraOrbit = '38deg 74deg 2.2m';
+        viewer.cameraTarget = 'auto auto auto';
+        if (infoCard) infoCard.style.display = 'none';
+        hotspots.forEach(h => h.classList.remove('active'));
+        stripPills.forEach(p => p.classList.remove('active'));
+        currentPointId = null;
+      });
+    }
+
+    // AR Button
+    if (btnAR) {
+      btnAR.addEventListener('click', () => {
+        sound.playSuccess();
+        if (viewer.canActivateAR) {
+          viewer.activateAR();
+        } else {
+          this.showToast('AR view requires WebXR/QuickLook on mobile.');
+        }
+      });
+    }
   }
 
   // --- PWA Installation & Service Worker ---

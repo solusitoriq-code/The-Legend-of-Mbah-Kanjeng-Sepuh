@@ -1,11 +1,11 @@
-const CACHE_NAME = 'materi-interaktif-v41';
+const CACHE_NAME = 'materi-interaktif-v43';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
-  './css/style.css?v=41',
+  './css/style.css?v=43',
   './js/app.js',
-  './js/app.js?v=39',
+  './js/app.js?v=43',
   './js/audio.js',
   './js/audio.js?v=20',
   './js/data-service.js',

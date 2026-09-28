@@ -9,4 +9,5 @@ package-lock.json
 assets/slides/*.png
 assets/slides/video_slide_12.mp4
 assets/slides/*_old.webp
+assets/*_raw.glb
 
