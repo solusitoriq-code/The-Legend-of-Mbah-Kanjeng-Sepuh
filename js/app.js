@@ -304,6 +304,12 @@ class InteractivePresentationApp {
         this.splashOverlay.classList.add('fade-out');
         setTimeout(() => {
           this.splashOverlay.style.display = 'none';
+          if (dataService.hasPosttestScore()) {
+            dataService.setIntroCompleted();
+            this.goToSlide(3, false);
+            this.showToast('Semua slide telah terbuka. Selamat mengeksplorasi!');
+            return;
+          }
           const savedPretest = dataService.getPretestScore();
           if (savedPretest !== null && savedPretest !== undefined) {
             // Siswa sudah memiliki skor pretest dan memilih "Next ke Slide 3"
@@ -373,7 +379,12 @@ class InteractivePresentationApp {
           } else if (target.classList.contains('btn-menu-ar') || target.id === 'btn-menu-ar') {
             this.showToast('Complete material up to Slide 13 to unlock AR.');
           } else if (target.classList.contains('btn-menu-quiz') || target.id === 'btn-menu-quiz') {
-            this.showToast('Complete material up to Slide 14 to unlock Quiz.');
+            const hasPretest = dataService.hasPretestScore();
+            if (!hasPretest) {
+              this.showToast('Complete Pretest (Slide 0) and material up to Slide 14 to unlock Quiz.');
+            } else {
+              this.showToast('Complete material up to Slide 14 to unlock Quiz.');
+            }
           }
           return;
         }
@@ -849,7 +860,7 @@ class InteractivePresentationApp {
       if (e.target.closest('#btn-restart-app')) {
         e.stopPropagation();
         sound.playClick();
-        this.openSplash();
+        this.handleExitApp();
       }
     });
 
@@ -1076,8 +1087,10 @@ class InteractivePresentationApp {
   goToSlide(slideNumber, playSound = true) {
     if (slideNumber < 1 || slideNumber > this.totalSlides) return;
 
+    const allUnlocked = dataService.hasPosttestScore();
+
     // Slide 6 Generic Structure Lock: Tidak bisa lanjut sebelum seluruh 4 struktur dibuka
-    if (this.currentSlide === 6 && slideNumber > 6 && !this.isSlide6Completed()) {
+    if (!allUnlocked && this.currentSlide === 6 && slideNumber > 6 && !this.isSlide6Completed()) {
       sound.playError();
       const count = this.slide6ViewedStructures ? this.slide6ViewedStructures.size : 0;
       this.showToast(`Explore all 4 narrative structures first (${4 - count} remaining).`);
@@ -1085,7 +1098,7 @@ class InteractivePresentationApp {
     }
 
     // Slide 11 Language Features Lock: Tidak bisa lanjut sebelum seluruh 5 fitur bahasa dibuka
-    if (this.currentSlide === 11 && slideNumber > 11 && !this.isSlide11Completed()) {
+    if (!allUnlocked && this.currentSlide === 11 && slideNumber > 11 && !this.isSlide11Completed()) {
       sound.playError();
       const count = this.slide11ViewedFeatures ? this.slide11ViewedFeatures.size : 0;
       this.showToast(`Explore all 5 Language Features first (${5 - count} remaining).`);
@@ -1093,35 +1106,47 @@ class InteractivePresentationApp {
     }
 
     // Slide 15 Post-test Lock: Tidak bisa lanjut ke Slide 16 sebelum Post-test diselesaikan
-    if (this.currentSlide === 15 && slideNumber > 15 && !this.isPosttestCompleted()) {
+    if (!allUnlocked && this.currentSlide === 15 && slideNumber > 15 && !this.isPosttestCompleted()) {
       sound.playError();
       this.showToast('Complete the Post-test evaluation before proceeding to Slide 16 (Glossary).');
       return;
     }
 
     // Video Lock (Slide 13): Baru bisa terakses jika sudah buka sampai slide 12
-    if (slideNumber === 13 && this.maxSlideVisited < 12) {
+    if (!allUnlocked && slideNumber === 13 && this.maxSlideVisited < 12) {
       sound.playError();
       this.showToast('Complete material up to Slide 12 to unlock Video.');
       return;
     }
 
     // AR Lock (Slide 14): Baru bisa terakses jika sudah buka sampai slide 13
-    if (slideNumber === 14 && this.maxSlideVisited < 13) {
+    if (!allUnlocked && slideNumber === 14 && this.maxSlideVisited < 13) {
       sound.playError();
       this.showToast('Complete material up to Slide 13 to unlock AR.');
       return;
     }
 
-    // Quiz Lock (Slide 15): Baru bisa terakses jika sudah buka sampai slide 14
-    if (slideNumber === 15 && this.maxSlideVisited < 14 && !dataService.isPosttestUnlocked()) {
+    // Quiz Lock (Slide 15): Harus lewati slide 0-14
+    if (!allUnlocked && slideNumber === 15 && !dataService.isPosttestUnlocked()) {
       sound.playError();
-      this.showToast('Complete material up to Slide 14 to unlock Quiz.');
+      const hasPretest = dataService.hasPretestScore();
+      if (!hasPretest) {
+        this.showToast('Complete Pretest (Slide 0) and material up to Slide 14 to unlock Quiz.');
+      } else {
+        this.showToast('Complete material up to Slide 14 to unlock Quiz.');
+      }
+      return;
+    }
+
+    // Slide 17 Lock: Tidak bisa lompat langsung ke Slide 17 sebelum Post-test selesai
+    if (!allUnlocked && slideNumber === 17 && !this.isPosttestCompleted()) {
+      sound.playError();
+      this.showToast('Complete Post-test before accessing Slide 17.');
       return;
     }
 
     // Slide 12 Video Lock: Do not navigate away if video modal is open and video is incomplete
-    if (this.currentSlide === 12 && slideNumber !== 12) {
+    if (!allUnlocked && this.currentSlide === 12 && slideNumber !== 12) {
       if (this.modalVideoSlide12 && this.modalVideoSlide12.style.display !== 'none' && !this.isSlide12VideoCompleted) {
         sound.playError();
         this.showToast('Watch video to completion before navigating.');
@@ -1157,14 +1182,21 @@ class InteractivePresentationApp {
 
     // Progress Tracker (Phase 4): Record highest slide visited by student
     const prevMax = this.maxSlideVisited;
-    if (slideNumber > this.maxSlideVisited) {
+    if (allUnlocked) {
+      this.maxSlideVisited = 17;
+      this.isSlide12VideoCompleted = true;
+    } else if (slideNumber > this.maxSlideVisited) {
       this.maxSlideVisited = slideNumber;
       dataService.saveMaxSlideVisited(slideNumber);
 
       // Unlock notification upon first arrival at Slide 14
       if (slideNumber === 14 && prevMax < 14) {
-        sound.playSuccess();
-        this.showToast('Learning material completed. Post-test (Slide 15) is unlocked.');
+        if (dataService.isPosttestUnlocked()) {
+          sound.playSuccess();
+          this.showToast('Learning material completed. Post-test (Slide 15) is unlocked.');
+        } else {
+          this.showToast('Material completed. Complete Pretest (Slide 0) to unlock Post-test.');
+        }
       }
     }
 
@@ -1304,12 +1336,13 @@ class InteractivePresentationApp {
   }
 
   updateLockUI() {
-    const maxVisited = this.maxSlideVisited || dataService.getMaxSlideVisited();
-    const isVideoUnlocked = maxVisited >= 12;
-    const isArUnlocked = maxVisited >= 13;
-    const isQuizUnlocked = maxVisited >= 14 || dataService.isPosttestUnlocked();
+    const allUnlocked = dataService.hasPosttestScore();
+    const maxVisited = allUnlocked ? 17 : (this.maxSlideVisited || dataService.getMaxSlideVisited());
+    const isVideoUnlocked = allUnlocked || maxVisited >= 12;
+    const isArUnlocked = allUnlocked || maxVisited >= 13;
+    const isQuizUnlocked = allUnlocked || dataService.isPosttestUnlocked();
 
-    // Hotspot Video on Slide 3 (Accessible if maxSlideVisited >= 12)
+    // Hotspot Video on Slide 3 (Accessible if maxSlideVisited >= 12 or allUnlocked)
     if (this.hotspotMenuVideo) {
       if (isVideoUnlocked) {
         this.hotspotMenuVideo.classList.remove('is-locked');
@@ -1325,7 +1358,7 @@ class InteractivePresentationApp {
       this.hotspotVideoLockBadge.style.display = isVideoUnlocked ? 'none' : 'inline-flex';
     }
 
-    // Hotspot AR on Slide 3 (Accessible if maxSlideVisited >= 13)
+    // Hotspot AR on Slide 3 (Accessible if maxSlideVisited >= 13 or allUnlocked)
     if (this.hotspotMenuAr) {
       if (isArUnlocked) {
         this.hotspotMenuAr.classList.remove('is-locked');
@@ -1341,7 +1374,7 @@ class InteractivePresentationApp {
       this.hotspotArLockBadge.style.display = isArUnlocked ? 'none' : 'inline-flex';
     }
 
-    // Hotspot Quiz on Slide 3 (Accessible if maxSlideVisited >= 14)
+    // Hotspot Quiz on Slide 3 (Accessible if slide 0-14 completed or allUnlocked)
     if (this.hotspotMenuQuiz) {
       if (isQuizUnlocked) {
         this.hotspotMenuQuiz.classList.remove('is-locked');
@@ -1350,7 +1383,7 @@ class InteractivePresentationApp {
       } else {
         this.hotspotMenuQuiz.classList.add('is-locked');
         this.hotspotMenuQuiz.classList.remove('is-unlocked');
-        this.hotspotMenuQuiz.title = 'Interactive Quiz (Locked - Complete up to Slide 14)';
+        this.hotspotMenuQuiz.title = 'Interactive Quiz (Locked - Complete Slide 0 to 14)';
       }
     }
     if (this.hotspotQuizLockBadge) {
@@ -1359,7 +1392,7 @@ class InteractivePresentationApp {
 
     // Refresh progress text in drawer
     if (this.drawerProgressText) {
-      const displayCompleted = Math.max(1, Math.min(this.maxSlideVisited - 2, 14));
+      const displayCompleted = allUnlocked ? 14 : Math.max(1, Math.min(this.maxSlideVisited - 2, 14));
       this.drawerProgressText.textContent = `Progress: ${displayCompleted} / 14 Slides`;
     }
   }
@@ -1368,10 +1401,11 @@ class InteractivePresentationApp {
     if (!this.drawerSlidesContainer) return;
     this.drawerSlidesContainer.innerHTML = '';
 
-    const unlocked = dataService.isPosttestUnlocked();
+    const allUnlocked = dataService.hasPosttestScore();
+    const unlocked = allUnlocked || dataService.isPosttestUnlocked();
 
     if (this.drawerProgressText) {
-      const displayCompleted = Math.max(1, Math.min(this.maxSlideVisited - 2, 14));
+      const displayCompleted = allUnlocked ? 14 : Math.max(1, Math.min(this.maxSlideVisited - 2, 14));
       this.drawerProgressText.textContent = `Progress: ${displayCompleted} / 14 Slides`;
     }
 
@@ -1379,17 +1413,17 @@ class InteractivePresentationApp {
       const div = document.createElement('div');
       const isCurrent = !slide.isPretest && slide.id === this.currentSlide;
       let isLocked = false;
-      if (!slide.isPretest) {
+      if (!allUnlocked && !slide.isPretest) {
         if (slide.id === 13) {
           isLocked = this.maxSlideVisited < 12;
         } else if (slide.id === 14) {
           isLocked = this.maxSlideVisited < 13;
         } else if (slide.id === 15) {
-          isLocked = this.maxSlideVisited < 14 && !unlocked;
+          isLocked = !unlocked;
         } else if (slide.id === 16) {
           isLocked = false;
         } else if (slide.id === 17) {
-          isLocked = (this.maxSlideVisited < 14 && !unlocked) || !this.isPosttestCompleted();
+          isLocked = !unlocked || !this.isPosttestCompleted();
         }
       }
 
@@ -1401,11 +1435,11 @@ class InteractivePresentationApp {
           : '<span class="drawer-status-badge unlocked">Start</span>';
       } else if (isLocked) {
         badgeHtml = '<span class="drawer-status-badge locked">Locked</span>';
-      } else if (slide.id === 17 && this.isPosttestCompleted()) {
+      } else if (slide.id === 17 && (allUnlocked || this.isPosttestCompleted())) {
         badgeHtml = '<span class="drawer-status-badge unlocked">Completed</span>';
       } else if (slide.id === 16) {
         badgeHtml = '<span class="drawer-status-badge unlocked">Glossary</span>';
-      } else if (slide.id <= this.maxSlideVisited) {
+      } else if (allUnlocked || slide.id <= this.maxSlideVisited) {
         badgeHtml = '<span class="drawer-status-badge completed">✓ Viewed</span>';
       } else {
         badgeHtml = '<span class="drawer-status-badge unlocked">Unlocked</span>';
@@ -1447,7 +1481,12 @@ class InteractivePresentationApp {
           } else if (slide.id === 14) {
             this.showToast('Complete material up to Slide 13 to unlock AR.');
           } else if (slide.id === 15) {
-            this.showToast('Complete material up to Slide 14 to unlock Quiz.');
+            const hasPretest = dataService.hasPretestScore();
+            if (!hasPretest) {
+              this.showToast('Complete Pretest (Slide 0) and material up to Slide 14 to unlock Quiz.');
+            } else {
+              this.showToast('Complete material up to Slide 14 to unlock Quiz.');
+            }
           } else {
             this.showToast('Complete material up to Slide 14 to unlock Post-test.');
           }
@@ -1502,9 +1541,14 @@ class InteractivePresentationApp {
         this.btnCloseSplash.style.display = 'flex';
       }
     } else {
+      if (this.inputNISN) this.inputNISN.value = '';
+      if (this.studentCard) this.studentCard.style.display = 'none';
+      if (this.btnStartSplash) this.btnStartSplash.style.display = 'none';
+      if (this.btnRetakePretest) this.btnRetakePretest.style.display = 'none';
       if (this.btnCloseSplash) {
         this.btnCloseSplash.style.display = 'none';
       }
+      this.showNISNFeedback('', '');
     }
   }
 
@@ -1690,6 +1734,7 @@ class InteractivePresentationApp {
   }
 
   isSlide6Completed() {
+    if (dataService.hasPosttestScore()) return true;
     return this.slide6ViewedStructures && this.slide6ViewedStructures.size >= 4;
   }
 
@@ -1709,11 +1754,12 @@ class InteractivePresentationApp {
   }
 
   updateSlide6LockUI() {
+    const allUnlocked = dataService.hasPosttestScore();
     const count = this.slide6ViewedStructures ? this.slide6ViewedStructures.size : 0;
-    const isCompleted = count >= 4;
+    const isCompleted = allUnlocked || count >= 4;
 
     if (this.slide6Count) {
-      this.slide6Count.textContent = count;
+      this.slide6Count.textContent = allUnlocked ? 4 : count;
     }
 
     if (this.slide6ProgressBadge) {
@@ -1729,7 +1775,7 @@ class InteractivePresentationApp {
     if (this.slide6Hotspots) {
       this.slide6Hotspots.forEach(btn => {
         const key = btn.getAttribute('data-structure');
-        if (this.slide6ViewedStructures && this.slide6ViewedStructures.has(key)) {
+        if (allUnlocked || (this.slide6ViewedStructures && this.slide6ViewedStructures.has(key))) {
           btn.classList.add('is-viewed');
         } else {
           btn.classList.remove('is-viewed');
@@ -1757,6 +1803,7 @@ class InteractivePresentationApp {
   }
 
   isSlide11Completed() {
+    if (dataService.hasPosttestScore()) return true;
     return this.slide11ViewedFeatures && this.slide11ViewedFeatures.size >= 5;
   }
 
@@ -1776,11 +1823,12 @@ class InteractivePresentationApp {
   }
 
   updateSlide11LockUI() {
+    const allUnlocked = dataService.hasPosttestScore();
     const count = this.slide11ViewedFeatures ? this.slide11ViewedFeatures.size : 0;
-    const isCompleted = count >= 5;
+    const isCompleted = allUnlocked || count >= 5;
 
     if (this.slide11Count) {
-      this.slide11Count.textContent = count;
+      this.slide11Count.textContent = allUnlocked ? 5 : count;
     }
 
     if (this.slide11ProgressBadge) {
@@ -1796,7 +1844,7 @@ class InteractivePresentationApp {
     if (this.slide11Cards) {
       this.slide11Cards.forEach(btn => {
         const key = btn.getAttribute('data-feature');
-        if (this.slide11ViewedFeatures && this.slide11ViewedFeatures.has(key)) {
+        if (allUnlocked || (this.slide11ViewedFeatures && this.slide11ViewedFeatures.has(key))) {
           btn.classList.add('is-viewed');
         } else {
           btn.classList.remove('is-viewed');
@@ -2384,19 +2432,30 @@ class InteractivePresentationApp {
       }
     });
 
-    // Reset tombol jika pengguna mengubah isi input
+    // Reset tombol jika pengguna mengubah isi input (input NIS/NISN baru)
     this.inputNISN.addEventListener('input', () => {
       const val = this.inputNISN.value.trim();
 
-      if (this.btnStartSplash && this.btnStartSplash.style.display !== 'none') {
-        const currentSaved = dataService.getCurrentStudent();
-        const matchesCurrent = currentSaved && (val === currentSaved.NISN || (currentSaved.NIS && val === currentSaved.NIS));
-        if (!matchesCurrent) {
-          this.btnStartSplash.style.display = 'none';
-          if (this.btnRetakePretest) this.btnRetakePretest.style.display = 'none';
-          if (this.studentCard) this.studentCard.style.display = 'none';
-          this.showNISNFeedback('ID number changed. Please click "Verify" again.', '');
+      const currentSaved = dataService.getCurrentStudent();
+      const matchesCurrent = currentSaved && (val === currentSaved.NISN || (currentSaved.NIS && val === currentSaved.NIS));
+      if (!matchesCurrent) {
+        if (currentSaved) {
+          dataService.clearSession();
+          this.maxSlideVisited = 1;
+          this.slide6ViewedStructures = new Set();
+          this.slide11ViewedFeatures = new Set();
+          this.isSlide12VideoCompleted = false;
+          this.updateLockUI();
+          this.updateSlide6LockUI();
+          this.updateSlide11LockUI();
+          this.updateSlide15LockUI();
+          this.renderDrawerList();
         }
+        if (this.btnStartSplash) this.btnStartSplash.style.display = 'none';
+        if (this.btnRetakePretest) this.btnRetakePretest.style.display = 'none';
+        if (this.studentCard) this.studentCard.style.display = 'none';
+        if (this.btnCloseSplash) this.btnCloseSplash.style.display = 'none';
+        this.showNISNFeedback(val ? 'ID number changed. Please click "Verify" again.' : '', '');
       }
     });
   }
@@ -2419,11 +2478,18 @@ class InteractivePresentationApp {
       if (result.success && result.student) {
         sound.playSuccess();
         this.renderVerifiedStudent(result.student);
-        const savedPretest = dataService.getPretestScore();
-        const hasScore = savedPretest !== null && savedPretest !== undefined;
-        const msg = hasScore
-          ? `Data siswa terverifikasi (Skor Pretest: ${savedPretest}). Silakan pilih "Next ke Slide 3" atau "Pretest Lagi".`
-          : 'Data siswa berhasil diverifikasi. Silakan klik "Start Pretest".';
+        const hasPost = dataService.hasPosttestScore();
+        const savedPost = dataService.getPosttestScore();
+        const savedPre = dataService.getPretestScore();
+
+        let msg = '';
+        if (hasPost) {
+          msg = `Data siswa terverifikasi (Skor Post-test: ${savedPost}). Semua slide telah terbuka!`;
+        } else if (savedPre !== null && savedPre !== undefined) {
+          msg = `Data siswa terverifikasi (Skor Pretest: ${savedPre}). Silakan pilih "Next ke Slide 3" atau "Pretest Lagi".`;
+        } else {
+          msg = 'Data siswa berhasil diverifikasi. Silakan klik "Start Pretest".';
+        }
         this.showNISNFeedback(msg, 'success');
       } else {
         sound.playError();
@@ -2449,11 +2515,21 @@ class InteractivePresentationApp {
     if (this.studentClass) this.studentClass.textContent = student.Kelas || '-';
     if (this.studentCard) this.studentCard.style.display = 'block';
 
+    const hasPostScore = dataService.hasPosttestScore();
+    const savedPosttest = dataService.getPosttestScore();
     const savedPretest = dataService.getPretestScore();
-    if (savedPretest !== null && savedPretest !== undefined) {
+
+    if (hasPostScore) {
+      // Siswa sudah memiliki skor post test: semua slide terbuka semua!
+      this.maxSlideVisited = 17;
+      dataService.saveMaxSlideVisited(17);
+      this.isSlide12VideoCompleted = true;
+      this.slide6ViewedStructures = new Set(dataService.getSlide6Progress());
+      this.slide11ViewedFeatures = new Set(dataService.getSlide11Progress());
+
       if (this.btnStartSplash) {
-        this.btnStartSplash.textContent = `Next ke Slide 3 (Pretest: ${savedPretest}) ➔`;
-        this.btnStartSplash.setAttribute('title', 'Lanjut langsung ke materi Slide 3');
+        this.btnStartSplash.textContent = `Buka Materi (Post-test: ${savedPosttest}) ➔`;
+        this.btnStartSplash.setAttribute('title', 'Semua slide terbuka. Klik untuk masuk.');
         this.btnStartSplash.style.display = 'inline-flex';
       }
       if (this.btnRetakePretest) {
@@ -2462,20 +2538,86 @@ class InteractivePresentationApp {
         this.btnRetakePretest.style.display = 'inline-flex';
       }
     } else {
-      if (this.btnStartSplash) {
-        this.btnStartSplash.textContent = 'Start Pretest ➔';
-        this.btnStartSplash.setAttribute('title', 'Mulai pengerjaan Pretest');
-        this.btnStartSplash.style.display = 'inline-flex';
-      }
-      if (this.btnRetakePretest) {
-        this.btnRetakePretest.style.display = 'none';
+      // Siswa belum memiliki skor post test: sinkronkan lock dengan progres akun ini
+      this.maxSlideVisited = dataService.getMaxSlideVisited();
+      this.slide6ViewedStructures = new Set(dataService.getSlide6Progress());
+      this.slide11ViewedFeatures = new Set(dataService.getSlide11Progress());
+      this.isSlide12VideoCompleted = false;
+
+      if (savedPretest !== null && savedPretest !== undefined) {
+        if (this.btnStartSplash) {
+          this.btnStartSplash.textContent = `Next ke Slide 3 (Pretest: ${savedPretest}) ➔`;
+          this.btnStartSplash.setAttribute('title', 'Lanjut langsung ke materi Slide 3');
+          this.btnStartSplash.style.display = 'inline-flex';
+        }
+        if (this.btnRetakePretest) {
+          this.btnRetakePretest.textContent = 'Pretest Lagi ↺';
+          this.btnRetakePretest.setAttribute('title', 'Kerjakan ulang Pretest');
+          this.btnRetakePretest.style.display = 'inline-flex';
+        }
+      } else {
+        if (this.btnStartSplash) {
+          this.btnStartSplash.textContent = 'Start Pretest ➔';
+          this.btnStartSplash.setAttribute('title', 'Mulai pengerjaan Pretest');
+          this.btnStartSplash.style.display = 'inline-flex';
+        }
+        if (this.btnRetakePretest) {
+          this.btnRetakePretest.style.display = 'none';
+        }
       }
     }
 
-    // Sinkronisasi status penguncian dan drawer untuk siswa yang login
-    this.maxSlideVisited = dataService.getMaxSlideVisited();
+    // Perbarui status semua UI penguncian
     this.updateLockUI();
+    this.updateSlide6LockUI();
+    this.updateSlide11LockUI();
+    this.updateSlide15LockUI();
     this.renderDrawerList();
+  }
+
+  handleExitApp() {
+    // 1. Reset data sesi siswa aktif
+    dataService.clearSession();
+
+    // 2. Reset status progres dan runtime state aplikasi
+    this.maxSlideVisited = 1;
+    this.slide6ViewedStructures = new Set();
+    this.slide11ViewedFeatures = new Set();
+    this.isSlide12VideoCompleted = false;
+    this.pretestQuestions = [];
+    this.pretestIndex = 0;
+    this.pretestAnswers = {};
+    this.pretestScore = null;
+    this.posttestQuestions = [];
+    this.posttestIndex = 0;
+    this.posttestAnswers = {};
+    this.posttestScore = null;
+    this.posttestActiveLeftId = null;
+    this.posttestTempPairs = {};
+    this.posttestAnswered = false;
+
+    // 3. Reset formulir & kartu siswa di Splash Screen
+    if (this.inputNISN) this.inputNISN.value = '';
+    if (this.studentCard) this.studentCard.style.display = 'none';
+    if (this.btnStartSplash) this.btnStartSplash.style.display = 'none';
+    if (this.btnRetakePretest) this.btnRetakePretest.style.display = 'none';
+    if (this.btnCloseSplash) this.btnCloseSplash.style.display = 'none';
+    this.showNISNFeedback('', '');
+
+    // 4. Perbarui status semua UI penguncian (kembali ke kondisi terkunci)
+    this.updateLockUI();
+    this.updateSlide6LockUI();
+    this.updateSlide11LockUI();
+    this.updateSlide15LockUI();
+    this.renderDrawerList();
+
+    // 5. Kembalikan posisi slide ke Slide 1
+    this.goToSlide(1, false);
+
+    // 6. Buka Splash Screen untuk input NIS/NISN baru
+    this.openSplash();
+
+    this.showToast('Sesi telah direset. Silakan masukkan NIS/NISN baru.');
   }
 
   showNISNFeedback(message, type = '') {
@@ -2953,6 +3095,7 @@ class InteractivePresentationApp {
   // =========================================================================
 
   isPosttestCompleted() {
+    if (dataService.hasPosttestScore()) return true;
     const score = dataService.getPosttestScore();
     return score !== null && score !== undefined;
   }
@@ -3631,7 +3774,15 @@ class InteractivePresentationApp {
     // Pre-render data leaderboard di latar belakang
     this.renderLeaderboard();
 
+    this.maxSlideVisited = 17;
+    dataService.saveMaxSlideVisited(17);
+    this.isSlide12VideoCompleted = true;
+    this.updateLockUI();
+    this.updateSlide6LockUI();
+    this.updateSlide11LockUI();
     this.updateSlide15LockUI();
+    this.renderDrawerList();
+
     if (saveRes && !saveRes.saved && saveRes.currentScore > finalScore) {
       this.showToast(`Post-test: ${finalScore} (Highest score kept: ${highestPosttest}, N-Gain: ${nGain.toFixed(2)})`);
     } else {

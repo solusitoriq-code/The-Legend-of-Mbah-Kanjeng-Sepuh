@@ -125,15 +125,23 @@ class DataService {
     let maxPre = null;
     let maxPost = null;
 
-    // 1. Cek storage siswa saat ini
-    const storedPre = safeStorage.getItem(pretestKey);
-    if (storedPre !== null && storedPre !== '' && !isNaN(Number(storedPre))) {
-      maxPre = Number(storedPre);
+    // 1. Cek storage siswa saat ini (mendukung identitas NISN dan NIS)
+    const candidatePreKeys = [pretestKey, nisn ? `${STORAGE_KEYS.PRETEST_SCORE}_${nisn}` : null, nis ? `${STORAGE_KEYS.PRETEST_SCORE}_${nis}` : null].filter(Boolean);
+    for (const k of candidatePreKeys) {
+      const val = safeStorage.getItem(k);
+      if (val !== null && val !== '' && !isNaN(Number(val))) {
+        const n = Number(val);
+        if (maxPre === null || n > maxPre) maxPre = n;
+      }
     }
 
-    const storedPost = safeStorage.getItem(posttestKey);
-    if (storedPost !== null && storedPost !== '' && !isNaN(Number(storedPost))) {
-      maxPost = Number(storedPost);
+    const candidatePostKeys = [posttestKey, nisn ? `${STORAGE_KEYS.POSTTEST_SCORE}_${nisn}` : null, nis ? `${STORAGE_KEYS.POSTTEST_SCORE}_${nis}` : null].filter(Boolean);
+    for (const k of candidatePostKeys) {
+      const val = safeStorage.getItem(k);
+      if (val !== null && val !== '' && !isNaN(Number(val))) {
+        const n = Number(val);
+        if (maxPost === null || n > maxPost) maxPost = n;
+      }
     }
 
     // 2. Cek semua sumber leaderboard (cache lokal & data yang dimuat)
@@ -177,11 +185,20 @@ class DataService {
     if (maxPost !== null) {
       safeStorage.setItem(posttestKey, String(maxPost));
       safeStorage.setItem(STORAGE_KEYS.POSTTEST_SCORE, String(maxPost));
-    }
-
-    const storedSlide = safeStorage.getItem(slideKey);
-    if (storedSlide !== null && !isNaN(parseInt(storedSlide, 10))) {
-      this.maxSlideVisited = Math.max(1, parseInt(storedSlide, 10));
+      // Jika memiliki skor post test, semua slide terbuka (max slide = 17)
+      this.maxSlideVisited = 17;
+      safeStorage.setItem(slideKey, '17');
+    } else {
+      let candidateSlide = null;
+      const candidateSlideKeys = [slideKey, nisn ? `${STORAGE_KEYS.MAX_SLIDE_VISITED}_${nisn}` : null, nis ? `${STORAGE_KEYS.MAX_SLIDE_VISITED}_${nis}` : null].filter(Boolean);
+      for (const k of candidateSlideKeys) {
+        const val = safeStorage.getItem(k);
+        if (val !== null && !isNaN(parseInt(val, 10))) {
+          const s = parseInt(val, 10);
+          if (candidateSlide === null || s > candidateSlide) candidateSlide = s;
+        }
+      }
+      this.maxSlideVisited = candidateSlide !== null ? Math.max(1, candidateSlide) : 1;
     }
   }
 
@@ -570,9 +587,28 @@ class DataService {
   }
 
   /**
+   * Mengecek apakah siswa aktif memiliki skor Post-test yang valid
+   * @returns {boolean}
+   */
+  hasPosttestScore() {
+    return this.posttestScore !== null && this.posttestScore !== undefined && !isNaN(Number(this.posttestScore));
+  }
+
+  /**
+   * Mengecek apakah siswa aktif memiliki skor Pretest yang valid
+   * @returns {boolean}
+   */
+  hasPretestScore() {
+    return this.pretestScore !== null && this.pretestScore !== undefined && !isNaN(Number(this.pretestScore));
+  }
+
+  /**
    * Mengambil slide tertinggi yang pernah dikunjungi siswa
    */
   getMaxSlideVisited() {
+    if (this.hasPosttestScore()) {
+      return 17;
+    }
     try {
       const key = this.getStorageKeyWithNISN(STORAGE_KEYS.MAX_SLIDE_VISITED);
       const saved = safeStorage.getItem(key) || safeStorage.getItem(STORAGE_KEYS.MAX_SLIDE_VISITED);
@@ -595,6 +631,10 @@ class DataService {
    * @param {number} slideNum
    */
   saveMaxSlideVisited(slideNum) {
+    if (this.hasPosttestScore()) {
+      this.maxSlideVisited = 17;
+      return 17;
+    }
     const num = parseInt(slideNum, 10);
     if (isNaN(num)) return this.maxSlideVisited;
     if (num > this.maxSlideVisited) {
@@ -614,6 +654,9 @@ class DataService {
    * Mengecek apakah Slide 1 & 2 (Intro) sudah pernah dibuka
    */
   isIntroCompleted() {
+    if (this.hasPosttestScore()) {
+      return true;
+    }
     try {
       const key = this.getStorageKeyWithNISN(STORAGE_KEYS.INTRO_COMPLETED);
       const val = (key && safeStorage.getItem(key)) || safeStorage.getItem(STORAGE_KEYS.INTRO_COMPLETED);
@@ -637,10 +680,16 @@ class DataService {
   }
 
   /**
-   * Mengecek apakah Post-test (Slide 15) sudah terbuka
+   * Mengecek apakah Post-test (Slide 15) sudah terbuka.
+   * Syarat: harus lewati slide 0 (pretest) dan slide 1-14, ATAU sudah memiliki nilai post-test.
    */
   isPosttestUnlocked() {
-    return this.getMaxSlideVisited() >= 14 || this.getPosttestScore() !== null;
+    if (this.hasPosttestScore()) {
+      return true;
+    }
+    const hasPretest = this.hasPretestScore();
+    const hasPassedThrough14 = this.getMaxSlideVisited() >= 14;
+    return Boolean(hasPretest && hasPassedThrough14);
   }
 
   /**
@@ -909,6 +958,9 @@ class DataService {
    * @returns {string[]}
    */
   getSlide6Progress() {
+    if (this.hasPosttestScore()) {
+      return ['orientation', 'complication', 'resolution', 'coda'];
+    }
     try {
       const key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE6_STRUCTURES);
       const val = (key && safeStorage.getItem(key)) || safeStorage.getItem(STORAGE_KEYS.SLIDE6_STRUCTURES);
@@ -938,6 +990,9 @@ class DataService {
    * @returns {string[]}
    */
   getSlide11Progress() {
+    if (this.hasPosttestScore()) {
+      return ['past_tense', 'time_conjunctions', 'action_verbs', 'saying_verbs', 'direct_speech'];
+    }
     try {
       const key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE11_FEATURES);
       const val = (key && safeStorage.getItem(key)) || safeStorage.getItem(STORAGE_KEYS.SLIDE11_FEATURES);
@@ -966,13 +1021,6 @@ class DataService {
    * Reset data sesi siswa aktif
    */
   clearSession() {
-    const slideKey = this.getStorageKeyWithNISN(STORAGE_KEYS.MAX_SLIDE_VISITED);
-    const introKey = this.getStorageKeyWithNISN(STORAGE_KEYS.INTRO_COMPLETED);
-    const pretestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.PRETEST_SCORE);
-    const posttestKey = this.getStorageKeyWithNISN(STORAGE_KEYS.POSTTEST_SCORE);
-    const slide6Key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE6_STRUCTURES);
-    const slide11Key = this.getStorageKeyWithNISN(STORAGE_KEYS.SLIDE11_FEATURES);
-
     this.currentStudent = null;
     this.pretestScore = null;
     this.posttestScore = null;
@@ -985,12 +1033,11 @@ class DataService {
     safeStorage.removeItem(STORAGE_KEYS.INTRO_COMPLETED);
     safeStorage.removeItem(STORAGE_KEYS.SLIDE6_STRUCTURES);
     safeStorage.removeItem(STORAGE_KEYS.SLIDE11_FEATURES);
-    if (slideKey) safeStorage.removeItem(slideKey);
-    if (introKey) safeStorage.removeItem(introKey);
-    if (pretestKey) safeStorage.removeItem(pretestKey);
-    if (posttestKey) safeStorage.removeItem(posttestKey);
-    if (slide6Key) safeStorage.removeItem(slide6Key);
-    if (slide11Key) safeStorage.removeItem(slide11Key);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('evaluasi_current_student');
+      }
+    } catch (e) {}
   }
 }
 

@@ -2622,6 +2622,14 @@
       "Nilai_Remidi": 75,
       "Status": "Lulus",
       "Total_Skor": 88
+    },
+    {
+      "Timestamp": "2026-09-28 16:51",
+      "NIS": "11568",
+      "NISN": "3104057755",
+      "Nama": "DAUD HADI PRATAMA",
+      "Kelas": "XI - 1",
+      "Nilai_Pretest": 0
     }
   ]
 }
