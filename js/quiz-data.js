@@ -211,7 +211,7 @@ export const POSTTEST_QUESTIONS = [
     "Opsi_D": "",
     "Opsi_E": "",
     "Kunci": "",
-    "Pasangan_Kiri": "Leave (to depart at night)|Throw (to cast tax decree)|Dig (to excavate canal)|Bring (to carry fresh water)|Build (to construct springs)",
+    "Pasangan_Kiri": "Leave|Throw|Dig|Bring|Build",
     "Pasangan_Kanan": "left|threw|dug|brought|built",
     "Pembahasan": "Answer Key: Leave ➔ left | Throw ➔ threw | Dig ➔ dug | Bring ➔ brought | Build ➔ built."
   }

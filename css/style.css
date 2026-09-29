@@ -4124,6 +4124,33 @@ body {
   pointer-events: auto !important;
 }
 
+.posttest-next-btn.is-loading {
+  opacity: 0.85;
+  cursor: wait !important;
+  pointer-events: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: btnSpin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes btnSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* 3. Post-test Result & Leaderboard Screen (Fase 6) */
 .posttest-result-view {
   padding: 16px 20px;

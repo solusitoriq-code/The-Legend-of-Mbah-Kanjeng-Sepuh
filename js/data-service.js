@@ -420,7 +420,40 @@ class DataService {
   }
 
   /**
-   * Mengambil daftar soal Post-test (15 soal MCQ & Matching)
+   * Menyeragamkan daftar soal Post-test (10 MCQ + 1 Soal Matching terpadu dengan 5 pasang kartu)
+   * @param {Array} questions
+   * @returns {Array}
+   */
+  normalizePosttestQuestions(questions) {
+    if (!Array.isArray(questions)) return POSTTEST_QUESTIONS;
+
+    const matchingQuestions = questions.filter(q => (q?.Tipe || '').toLowerCase() === 'matching');
+    if (matchingQuestions.length <= 1) {
+      return questions;
+    }
+
+    const mcqQuestions = questions.filter(q => (q?.Tipe || '').toLowerCase() !== 'matching');
+
+    const combinedMatching = {
+      ID: mcqQuestions.length + 1,
+      Tipe: 'matching',
+      Pertanyaan: 'Match each base verb (Column A) with its correct irregular past simple form (Column B) based on the actions performed in the story!',
+      Opsi_A: '',
+      Opsi_B: '',
+      Opsi_C: '',
+      Opsi_D: '',
+      Opsi_E: '',
+      Kunci: '',
+      Pasangan_Kiri: 'Leave|Throw|Dig|Bring|Build',
+      Pasangan_Kanan: 'left|threw|dug|brought|built',
+      Pembahasan: 'Answer Key: Leave ➔ left | Throw ➔ threw | Dig ➔ dug | Bring ➔ brought | Build ➔ built.'
+    };
+
+    return [...mcqQuestions, combinedMatching];
+  }
+
+  /**
+   * Mengambil daftar soal Post-test (10 soal MCQ & 1 soal Matching terpadu)
    */
   async getPosttestQuestions() {
     if (!this.data) {
@@ -432,7 +465,7 @@ class DataService {
     }
     const questions = this.data?.soalPosttest;
     if (Array.isArray(questions) && questions.length > 0) {
-      return questions;
+      return this.normalizePosttestQuestions(questions);
     }
     return POSTTEST_QUESTIONS;
   }
@@ -875,61 +908,18 @@ class DataService {
   /**
    * Mengambil data leaderboard
    */
-  async getLeaderboard() {
-    let list = [];
+  /**
+   * Menormalisasi dan mengurutkan entri data leaderboard
+   * @param {Array} list
+   * @returns {Array}
+   */
+  normalizeLeaderboardList(list) {
+    if (!Array.isArray(list) || list.length === 0) return [];
 
-    // Jika mode GOOGLE_SHEETS aktif, coba ambil data peringkat real-time terbaru dari Google Sheets
-    if (CONFIG.MODE === 'GOOGLE_SHEETS' && CONFIG.GOOGLE_SHEETS_URL) {
-      try {
-        const response = await fetch(`${CONFIG.GOOGLE_SHEETS_URL}?action=getData`, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (response.ok) {
-          const remoteData = await response.json();
-          if (remoteData?.leaderboard && Array.isArray(remoteData.leaderboard)) {
-            this.data = remoteData;
-            safeStorage.setItem(STORAGE_KEYS.LOCAL_DATA_CACHE, JSON.stringify(remoteData));
-            safeStorage.setItem(STORAGE_KEYS.LEADERBOARD_LOCAL, JSON.stringify(remoteData.leaderboard));
-            list = [...remoteData.leaderboard];
-          }
-        }
-      } catch (err) {
-        console.warn('[DataService] Failed to load online leaderboard, falling back to local cache:', err);
-      }
-    }
-
-    // Coba ambil dari storage lokal jika belum didapatkan
-    if (list.length === 0) {
-      try {
-        const stored = safeStorage.getItem(STORAGE_KEYS.LEADERBOARD_LOCAL);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            list = parsed;
-          }
-        }
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-
-    if (list.length === 0) {
-      if (!this.data) {
-        await this.loadData();
-      }
-      list = [...(this.data?.leaderboard || [])];
-    }
-
-    // Normalisasi dan hitung metrik untuk setiap baris
-    list.forEach(item => {
+    const normalized = list.map(item => {
       const pre = Number(item.Nilai_Pretest ?? item.nilaiPretest ?? 0);
       const post = Number(item.Nilai_Posttest ?? item.nilaiPosttest ?? item.Total_Skor ?? 0);
       const total = Number(item.Total_Skor ?? item.totalSkor ?? post);
-      item.Nilai_Pretest = pre;
-      item.Nilai_Posttest = post;
-      item.Total_Skor = total;
-      item.Peningkatan = post - pre;
 
       let nGain = 0;
       if (100 - pre <= 0) {
@@ -937,10 +927,21 @@ class DataService {
       } else {
         nGain = Math.round(((post - pre) / (100 - pre)) * 100) / 100;
       }
-      item.Nilai_NGain = nGain;
+
+      return {
+        ...item,
+        Nilai_Pretest: pre,
+        nilaiPretest: pre,
+        Nilai_Posttest: post,
+        nilaiPosttest: post,
+        Total_Skor: total,
+        totalSkor: total,
+        Peningkatan: post - pre,
+        Nilai_NGain: Number(item.Nilai_NGain ?? nGain)
+      };
     });
 
-    list.sort((a, b) => {
+    normalized.sort((a, b) => {
       const scoreA = Number(a.Total_Skor);
       const scoreB = Number(b.Total_Skor);
       if (scoreB !== scoreA) return scoreB - scoreA;
@@ -949,6 +950,97 @@ class DataService {
       if (postB !== postA) return postB - postA;
       return Number(b.Nilai_Pretest) - Number(a.Nilai_Pretest);
     });
+
+    return normalized;
+  }
+
+  /**
+   * Mengambil data leaderboard langsung dari memori atau penyimpanan lokal (sinkron, 0ms)
+   * @returns {Array}
+   */
+  getCachedLeaderboard() {
+    let list = [];
+
+    // 1. Cek storage lokal
+    try {
+      const stored = safeStorage.getItem(STORAGE_KEYS.LEADERBOARD_LOCAL);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          list = parsed;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // 2. Cek memori this.data
+    if (list.length === 0 && this.data?.leaderboard && Array.isArray(this.data.leaderboard)) {
+      list = [...this.data.leaderboard];
+    }
+
+    // 3. Normalisasi & urutkan
+    return this.normalizeLeaderboardList(list);
+  }
+
+  /**
+   * Mengambil data leaderboard terurut dengan strategi Stale-While-Revalidate
+   * Mengutamakan data lokal cepat dan memperbarui dari server lokal / Google Sheets di latar belakang
+   * @returns {Promise<Array>}
+   */
+  async getLeaderboard() {
+    let list = this.getCachedLeaderboard();
+
+    // 1. Coba ambil data terbaru dari berkas lokal jika menjalankan server lokal
+    try {
+      const localResp = await Promise.race([
+        fetch('./data/materi_evaluasi.json?_t=' + Date.now(), { cache: 'no-store' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+      ]);
+      if (localResp && localResp.ok) {
+        const localJson = await localResp.json();
+        if (localJson?.leaderboard && Array.isArray(localJson.leaderboard) && localJson.leaderboard.length > 0) {
+          list = this.normalizeLeaderboardList(localJson.leaderboard);
+          safeStorage.setItem(STORAGE_KEYS.LEADERBOARD_LOCAL, JSON.stringify(list));
+        }
+      }
+    } catch (e) {
+      // Abaikan jika tidak tersedia
+    }
+
+    // 2. Jika mode GOOGLE_SHEETS aktif, gunakan action=getLeaderboard (ringan & cepat) dengan timeout 3.5 detik
+    if (CONFIG.MODE === 'GOOGLE_SHEETS' && CONFIG.GOOGLE_SHEETS_URL) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const response = await fetch(`${CONFIG.GOOGLE_SHEETS_URL}?action=getLeaderboard`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response && response.ok) {
+          const remoteData = await response.json();
+          const remoteList = remoteData?.leaderboard || (Array.isArray(remoteData) ? remoteData : null);
+          if (remoteList && Array.isArray(remoteList) && remoteList.length > 0) {
+            list = this.normalizeLeaderboardList(remoteList);
+            safeStorage.setItem(STORAGE_KEYS.LEADERBOARD_LOCAL, JSON.stringify(list));
+          }
+        }
+      } catch (err) {
+        console.warn('[DataService] Remote leaderboard sync timeout/failed, using local leaderboard:', err);
+      }
+    }
+
+    // 3. Jika masih kosong, load fallback data
+    if (list.length === 0) {
+      if (!this.data) {
+        await this.loadData();
+      }
+      list = this.normalizeLeaderboardList(this.data?.leaderboard || []);
+    }
 
     return list;
   }

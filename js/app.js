@@ -46,6 +46,7 @@ class InteractivePresentationApp {
     this.posttestTempPairs = {};
     this.posttestAnswered = false;
     this.currentMatchingData = null;
+    this.isSubmittingPosttest = false;
 
     // Formative Mini Game State
     this.gameRound = 0;
@@ -699,25 +700,37 @@ class InteractivePresentationApp {
         e.preventDefault();
         e.stopPropagation();
 
+        if (this.isSubmittingPosttest) return;
+
         const q = this.posttestQuestions && this.posttestQuestions[this.posttestIndex];
         const isMatching = (q?.Tipe || '').toLowerCase() === 'matching';
 
-        if (!this.posttestAnswered) {
-          if (isMatching) {
-            const rawLeft = (q.Pasangan_Kiri || '').split('|').map(s => s.trim()).filter(Boolean);
-            const pairedCount = Object.keys(this.posttestTempPairs || {}).length;
-            if (pairedCount === rawLeft.length && pairedCount > 0) {
-              this.verifyMatchingAnswer();
-              return;
-            } else {
-              sound.playError();
-              this.showToast(`Match all (${pairedCount}/${rawLeft.length}) pairs first.`);
-              return;
-            }
-          } else {
+        if (isMatching) {
+          const rawLeft = (q?.Pasangan_Kiri || '').split('|').map(s => s.trim()).filter(Boolean);
+          const pairedCount = Object.keys(this.posttestTempPairs || {}).length;
+          if (pairedCount < rawLeft.length || pairedCount === 0) {
+            sound.playError();
+            this.showToast(`Connect all (${pairedCount}/${rawLeft.length}) pairs first.`);
+            return;
+          }
+          this.verifyMatchingAnswer();
+        } else {
+          if (!this.posttestAnswers || !this.posttestAnswers[this.posttestIndex]?.selected) {
             sound.playError();
             this.showToast('Select an answer option first.');
             return;
+          }
+          this.posttestAnswered = true;
+        }
+
+        const isFinal = this.posttestIndex === (this.posttestQuestions.length - 1);
+        if (isFinal) {
+          this.isSubmittingPosttest = true;
+          this.btnNextQuestion.disabled = true;
+          this.btnNextQuestion.classList.add('is-loading');
+          this.btnNextQuestion.innerHTML = '<span class="btn-spinner"></span> Saving Results...';
+          if (this.posttestHint) {
+            this.posttestHint.textContent = 'Saving evaluation score... Please wait.';
           }
         }
 
@@ -3051,6 +3064,11 @@ class InteractivePresentationApp {
     this.posttestTempPairs = {};
     this.posttestAnswered = false;
     this.currentMatchingData = null;
+    this.isSubmittingPosttest = false;
+
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.classList.remove('is-loading');
+    }
 
     const student = dataService.getCurrentStudent();
     if (this.posttestStudentTag) {
@@ -3071,7 +3089,7 @@ class InteractivePresentationApp {
   }
 
   renderPosttestQuestion() {
-    const total = this.posttestQuestions.length || 15;
+    const total = this.posttestQuestions.length || 11;
     if (this.posttestIndex < 0 || this.posttestIndex >= total) return;
 
     const q = this.posttestQuestions[this.posttestIndex];
@@ -3118,7 +3136,9 @@ class InteractivePresentationApp {
       if (this.posttestMcqContainer) this.posttestMcqContainer.style.display = 'none';
       if (this.posttestMatchingContainer) this.posttestMatchingContainer.style.display = 'flex';
       if (this.posttestHint) {
-        this.posttestHint.textContent = 'Connect all card pairs, then click "Confirm Pairs".';
+        this.posttestHint.textContent = this.posttestIndex === total - 1
+          ? 'Connect all 5 pairs, then click "View Evaluation Results".'
+          : 'Connect all pairs, then click "Next Question".';
       }
       this.setupMatchingQuestion(q);
     } else {
@@ -3173,6 +3193,7 @@ class InteractivePresentationApp {
     });
 
     if (currentAnswer) {
+      this.posttestAnswered = true;
       if (this.posttestHint) {
         this.posttestHint.textContent = `Your answer: Option ${currentAnswer}. Click "Next Question" to proceed.`;
       }
@@ -3198,6 +3219,7 @@ class InteractivePresentationApp {
       isCorrect: isCorrect,
       earnedPoints: isCorrect ? 1.0 : 0.0
     };
+    this.posttestAnswered = true;
 
     if (this.posttestHint) {
       this.posttestHint.textContent = `Your answer: Option ${letter}. Click "Next Question" to proceed.`;
@@ -3229,7 +3251,7 @@ class InteractivePresentationApp {
       [shuffledRight[i], shuffledRight[j]] = [shuffledRight[j], shuffledRight[i]];
     }
 
-    this.currentMatchingData = { leftItems, shuffledRight, q };
+    this.currentMatchingData = { leftItems, shuffledRight, q, rawRight };
     this.posttestTempPairs = {};
     this.posttestActiveLeftId = null;
 
@@ -3372,6 +3394,10 @@ class InteractivePresentationApp {
     if (this.btnResetMatching) {
       this.btnResetMatching.disabled = count === 0 || this.posttestAnswered;
     }
+
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.disabled = count < totalPairs;
+    }
   }
 
   handleMatchingLeftClick(leftId) {
@@ -3447,7 +3473,10 @@ class InteractivePresentationApp {
 
     if (this.posttestMatchingHint) {
       if (count === total) {
-        this.posttestMatchingHint.textContent = 'All pairs connected. Click "Confirm Pairs" to confirm.';
+        const isFinal = this.posttestIndex === (this.posttestQuestions.length - 1);
+        this.posttestMatchingHint.textContent = isFinal
+          ? 'All 5 pairs connected! Click "View Evaluation Results" below to finish.'
+          : 'All pairs connected! Click "Next Question" below to continue.';
       } else {
         this.posttestMatchingHint.textContent = `Pair connected! Continue (${count} of ${total}).`;
       }
@@ -3467,16 +3496,38 @@ class InteractivePresentationApp {
   }
 
   verifyMatchingAnswer() {
-    if (this.posttestAnswered || !this.currentMatchingData) return;
+    if (!this.currentMatchingData) return;
     this.posttestAnswered = true;
 
     sound.playClick();
 
-    const { leftItems } = this.currentMatchingData;
+    const { leftItems, rawRight } = this.currentMatchingData;
     let correctCount = 0;
 
+    const VERB_PAIRS = {
+      leave: 'left',
+      throw: 'threw',
+      dig: 'dug',
+      bring: 'brought',
+      build: 'built'
+    };
+
     leftItems.forEach(item => {
-      if (this.posttestTempPairs[item.id] === item.id) {
+      const pairedRightOrigId = this.posttestTempPairs[item.id];
+      if (pairedRightOrigId === undefined) return;
+
+      const rightText = (rawRight && rawRight[pairedRightOrigId] ? rawRight[pairedRightOrigId] : '').trim().toLowerCase();
+      const leftText = item.text.trim().toLowerCase();
+
+      let matchedByDict = false;
+      for (const [v1, v2] of Object.entries(VERB_PAIRS)) {
+        if (leftText.includes(v1) && rightText.includes(v2)) {
+          matchedByDict = true;
+          break;
+        }
+      }
+
+      if (matchedByDict || pairedRightOrigId === item.id) {
         correctCount++;
       }
     });
@@ -3491,26 +3542,13 @@ class InteractivePresentationApp {
       earnedPoints
     };
 
-    if (this.posttestHint) {
-      this.posttestHint.textContent = 'Pairs confirmed. Click "Next Question" to proceed.';
-    }
-
-    // Render kartu dengan status terkunci tanpa menampilkan kunci benar/salah
-    this.renderMatchingCards();
-
-    // Pastikan penjelasan dan kunci jawaban pasangan TIDAK ditampilkan
-    if (this.posttestExplanationBox) {
-      this.posttestExplanationBox.style.display = 'none';
-      this.posttestExplanationBox.innerHTML = '';
-    }
-
     if (this.btnNextQuestion) {
       this.btnNextQuestion.disabled = false;
     }
   }
 
   nextPosttestQuestion() {
-    const total = this.posttestQuestions.length || 15;
+    const total = this.posttestQuestions.length || 11;
     if (this.posttestIndex < total - 1) {
       this.posttestIndex++;
       this.renderPosttestQuestion();
@@ -3520,6 +3558,16 @@ class InteractivePresentationApp {
   }
 
   async finishPosttest() {
+    this.isSubmittingPosttest = true;
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.disabled = true;
+      this.btnNextQuestion.classList.add('is-loading');
+      this.btnNextQuestion.innerHTML = '<span class="btn-spinner"></span> Saving Results...';
+    }
+    if (this.posttestHint) {
+      this.posttestHint.textContent = 'Saving evaluation score... Please wait.';
+    }
+
     let totalEarned = 0;
     let mcqCorrect = 0;
     let matchingFullCorrect = 0;
@@ -3552,7 +3600,7 @@ class InteractivePresentationApp {
     const highestPosttest = dataService.getPosttestScore() ?? finalScore;
     this.posttestScore = highestPosttest;
 
-    // Kirim & simpan skor ke Leaderboard secara otomatis
+    // Kirim & simpan skor ke Leaderboard secara otomatis (dengan timeout 4 detik)
     const student = dataService.getCurrentStudent();
     const pretestScore = dataService.getPretestScore() || 0;
 
@@ -3561,16 +3609,26 @@ class InteractivePresentationApp {
     const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
     try {
-      await dataService.submitScore({
-        timestamp: timestamp,
-        nisn: student?.NISN || '-',
-        nama: student?.Nama || 'Student',
-        nilaiPretest: pretestScore,
-        nilaiPosttest: highestPosttest,
-        totalSkor: highestPosttest
-      });
+      await Promise.race([
+        dataService.submitScore({
+          timestamp: timestamp,
+          nisn: student?.NISN || '-',
+          nama: student?.Nama || 'Student',
+          nilaiPretest: pretestScore,
+          nilaiPosttest: highestPosttest,
+          totalSkor: highestPosttest
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 4000))
+      ]);
     } catch (e) {
-      console.warn('[Posttest] Failed to update leaderboard:', e);
+      console.warn('[Posttest] Failed to update leaderboard or timed out:', e);
+    }
+
+    this.isSubmittingPosttest = false;
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.classList.remove('is-loading');
+      this.btnNextQuestion.disabled = false;
+      this.btnNextQuestion.textContent = 'View Evaluation Results ➔';
     }
 
     sound.playFanfare();
@@ -3706,97 +3764,112 @@ class InteractivePresentationApp {
     }
   }
 
+  populateLeaderboardTable(list) {
+    if (!this.leaderboardTableBody || !Array.isArray(list) || list.length === 0) return;
+
+    const currentStudent = dataService.getCurrentStudent();
+    const currentNisn = String(currentStudent?.NISN || '').trim();
+
+    // Hitung statistik kelas
+    const totalStudents = list.length;
+    const sumPost = list.reduce((acc, cur) => acc + Number(cur.Total_Skor ?? cur.Nilai_Posttest ?? 0), 0);
+    const avgScore = Math.round(sumPost / (totalStudents || 1));
+    const topScore = Math.max(...list.map(cur => Number(cur.Total_Skor ?? cur.Nilai_Posttest ?? 0)));
+
+    // Posisi siswa aktif
+    let myRank = null;
+    list.forEach((item, idx) => {
+      if (currentNisn && String(item.NISN || item.nisn).trim() === currentNisn) {
+        myRank = idx + 1;
+      }
+    });
+
+    if (this.myRankText) {
+      this.myRankText.textContent = myRank ? `Rank #${myRank} of ${totalStudents} Students` : `Not Ranked (Take Quiz)`;
+    }
+    if (this.leaderboardAvgPill) {
+      this.leaderboardAvgPill.textContent = `Average: ${avgScore}`;
+    }
+    if (this.leaderboardTopPill) {
+      this.leaderboardTopPill.textContent = `Highest: ${topScore}`;
+    }
+
+    // Render Baris Tabel
+    this.leaderboardTableBody.innerHTML = '';
+    list.forEach((item, idx) => {
+      const rank = idx + 1;
+      const isCurrent = currentNisn && String(item.NISN || item.nisn).trim() === currentNisn;
+      const tr = document.createElement('tr');
+      if (isCurrent) tr.classList.add('is-current-student');
+
+      // Rank Badge
+      let rankClass = 'rank-default';
+      if (rank === 1) rankClass = 'rank-1';
+      else if (rank === 2) rankClass = 'rank-2';
+      else if (rank === 3) rankClass = 'rank-3';
+
+      // Delta Peningkatan
+      const pre = Number(item.Nilai_Pretest ?? item.nilaiPretest ?? 0);
+      const post = Number(item.Nilai_Posttest ?? item.nilaiPosttest ?? item.Total_Skor ?? 0);
+      const delta = post - pre;
+      let deltaHtml = `<span class="gain-pill zero">0</span>`;
+      if (delta > 0) {
+        deltaHtml = `<span class="gain-pill pos">+${delta}</span>`;
+      } else if (delta < 0) {
+        deltaHtml = `<span class="gain-pill neg">${delta}</span>`;
+      }
+
+      // N-Gain
+      const nGain = Number(item.Nilai_NGain ?? 0);
+      let ngainClass = 'low';
+      let ngainLabel = 'Low';
+      if (nGain >= 0.70) {
+        ngainClass = 'high';
+        ngainLabel = 'High';
+      } else if (nGain >= 0.30) {
+        ngainClass = 'mid';
+        ngainLabel = 'Medium';
+      }
+
+      const nameHtml = `${item.Nama || item.nama || 'Student'}${isCurrent ? '<span class="current-user-tag">You</span>' : ''}`;
+
+      tr.innerHTML = `
+        <td class="col-rank"><span class="rank-badge ${rankClass}">#${rank}</span></td>
+        <td class="col-name">${nameHtml}</td>
+        <td class="col-pre">${pre}</td>
+        <td class="col-post"><strong>${post}</strong></td>
+        <td class="col-gain">${deltaHtml}</td>
+        <td class="col-ngain"><span class="ngain-pill ${ngainClass}">${nGain.toFixed(2)} (${ngainLabel})</span></td>
+      `;
+
+      this.leaderboardTableBody.appendChild(tr);
+    });
+  }
+
   async renderLeaderboard() {
     if (!this.leaderboardTableBody) return;
-    this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #94a3b8;">Loading leaderboard data...</td></tr>`;
 
+    // 1. Tampilkan data dari cache lokal secara INSTAN (0 ms) agar siswa tidak menunggu
+    const cachedList = dataService.getCachedLeaderboard();
+    if (cachedList && cachedList.length > 0) {
+      this.populateLeaderboardTable(cachedList);
+    } else {
+      this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #94a3b8;">Loading leaderboard data...</td></tr>`;
+    }
+
+    // 2. Ambil pembaruan terkini di latar belakang tanpa mengunci antarmuka
     try {
-      const list = await dataService.getLeaderboard();
-      const currentStudent = dataService.getCurrentStudent();
-      const currentNisn = String(currentStudent?.NISN || '').trim();
-
-      if (!list || list.length === 0) {
+      const freshList = await dataService.getLeaderboard();
+      if (freshList && freshList.length > 0) {
+        this.populateLeaderboardTable(freshList);
+      } else if (!cachedList || cachedList.length === 0) {
         this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #94a3b8;">No evaluation data recorded yet.</td></tr>`;
-        return;
       }
-
-      // Hitung statistik kelas
-      const totalStudents = list.length;
-      const sumPost = list.reduce((acc, cur) => acc + Number(cur.Total_Skor ?? cur.Nilai_Posttest ?? 0), 0);
-      const avgScore = Math.round(sumPost / (totalStudents || 1));
-      const topScore = Math.max(...list.map(cur => Number(cur.Total_Skor ?? cur.Nilai_Posttest ?? 0)));
-
-      // Posisi siswa aktif
-      let myRank = null;
-      list.forEach((item, idx) => {
-        if (currentNisn && String(item.NISN || item.nisn).trim() === currentNisn) {
-          myRank = idx + 1;
-        }
-      });
-
-      if (this.myRankText) {
-        this.myRankText.textContent = myRank ? `Rank #${myRank} of ${totalStudents} Students` : `Not Ranked (Take Quiz)`;
-      }
-      if (this.leaderboardAvgPill) {
-        this.leaderboardAvgPill.textContent = `Average: ${avgScore}`;
-      }
-      if (this.leaderboardTopPill) {
-        this.leaderboardTopPill.textContent = `Highest: ${topScore}`;
-      }
-
-      // Render Baris Tabel
-      this.leaderboardTableBody.innerHTML = '';
-      list.forEach((item, idx) => {
-        const rank = idx + 1;
-        const isCurrent = currentNisn && String(item.NISN || item.nisn).trim() === currentNisn;
-        const tr = document.createElement('tr');
-        if (isCurrent) tr.classList.add('is-current-student');
-
-        // Rank Badge
-        let rankClass = 'rank-default';
-        if (rank === 1) rankClass = 'rank-1';
-        else if (rank === 2) rankClass = 'rank-2';
-        else if (rank === 3) rankClass = 'rank-3';
-
-        // Delta Peningkatan
-        const pre = Number(item.Nilai_Pretest ?? item.nilaiPretest ?? 0);
-        const post = Number(item.Nilai_Posttest ?? item.nilaiPosttest ?? item.Total_Skor ?? 0);
-        const delta = post - pre;
-        let deltaHtml = `<span class="gain-pill zero">0</span>`;
-        if (delta > 0) {
-          deltaHtml = `<span class="gain-pill pos">+${delta}</span>`;
-        } else if (delta < 0) {
-          deltaHtml = `<span class="gain-pill neg">${delta}</span>`;
-        }
-
-        // N-Gain
-        const nGain = Number(item.Nilai_NGain ?? 0);
-        let ngainClass = 'low';
-        let ngainLabel = 'Low';
-        if (nGain >= 0.70) {
-          ngainClass = 'high';
-          ngainLabel = 'High';
-        } else if (nGain >= 0.30) {
-          ngainClass = 'mid';
-          ngainLabel = 'Medium';
-        }
-
-        const nameHtml = `${item.Nama || item.nama || 'Student'}${isCurrent ? '<span class="current-user-tag">You</span>' : ''}`;
-
-        tr.innerHTML = `
-          <td class="col-rank"><span class="rank-badge ${rankClass}">#${rank}</span></td>
-          <td class="col-name">${nameHtml}</td>
-          <td class="col-pre">${pre}</td>
-          <td class="col-post"><strong>${post}</strong></td>
-          <td class="col-gain">${deltaHtml}</td>
-          <td class="col-ngain"><span class="ngain-pill ${ngainClass}">${nGain.toFixed(2)} (${ngainLabel})</span></td>
-        `;
-
-        this.leaderboardTableBody.appendChild(tr);
-      });
     } catch (err) {
-      console.warn('[Leaderboard] Failed to render data:', err);
-      this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #f87171;">An error occurred while loading leaderboard data.</td></tr>`;
+      console.warn('[Leaderboard] Failed to render fresh data:', err);
+      if (!cachedList || cachedList.length === 0) {
+        this.leaderboardTableBody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: #f87171;">Failed to load leaderboard data.</td></tr>`;
+      }
     }
   }
 
@@ -3875,6 +3948,12 @@ class InteractivePresentationApp {
 
   closePosttest() {
     sound.playPop();
+    this.isSubmittingPosttest = false;
+    if (this.btnNextQuestion) {
+      this.btnNextQuestion.classList.remove('is-loading');
+      this.btnNextQuestion.disabled = false;
+      this.btnNextQuestion.textContent = 'View Evaluation Results ➔';
+    }
     if (this.posttestQuizView) this.posttestQuizView.style.display = 'none';
     if (this.quizResultScreen) this.quizResultScreen.style.display = 'none';
     if (this.posttestStartView) this.posttestStartView.style.display = 'flex';
