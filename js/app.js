@@ -73,11 +73,7 @@ class InteractivePresentationApp {
     this.updateSlide11LockUI();
     this.renderDrawerList();
     this.bindEvents();
-    const initialSlide = this.hasVisitedIntro() ? 3 : 1;
-    this.goToSlide(initialSlide, false);
-    if (this.hasVisitedIntro() && this.btnSlide3Prev) {
-      this.btnSlide3Prev.style.display = 'none';
-    }
+    this.goToSlide(1, false);
     this.initPWA();
   }
 
@@ -286,23 +282,23 @@ class InteractivePresentationApp {
         this.splashOverlay.classList.add('fade-out');
         setTimeout(() => {
           this.splashOverlay.style.display = 'none';
-          if (dataService.hasPosttestScore()) {
-            dataService.setIntroCompleted();
-            this.goToSlide(3, false);
-            this.showToast('Semua slide telah terbuka. Selamat mengeksplorasi!');
-            return;
-          }
           const savedPretest = dataService.getPretestScore();
-          if (savedPretest !== null && savedPretest !== undefined) {
-            // Siswa sudah memiliki skor pretest dan memilih "Next ke Slide 3"
-            dataService.setIntroCompleted();
-            this.goToSlide(3, false);
-            const student = dataService.getCurrentStudent();
-            if (student) {
-              this.showToast(`Lanjut ke Slide 3 (Skor Pretest: ${savedPretest}).`);
+          const hasPost = dataService.hasPosttestScore();
+
+          if (hasPost || (savedPretest !== null && savedPretest !== undefined)) {
+            // Siswa sudah pretest/posttest: tetap melewati Slide 1 dan Slide 2
+            this.goToSlide(1, false);
+            if (this.videoSlide1) {
+              this.videoSlide1.muted = sound.muted;
+              this.playSlideVideo(this.videoSlide1);
+            }
+            if (hasPost) {
+              this.showToast('Semua slide telah terbuka. Mulai dari Slide 1 (Cover).');
+            } else {
+              this.showToast(`Mulai belajar dari Slide 1 (Skor Pretest: ${savedPretest}).`);
             }
           } else {
-            // Belum mengerjakan pretest, luncurkan modul Pretest
+            // Belum mengerjakan pretest, luncurkan modul Pretest terlebih dahulu
             this.startPretest();
           }
         }, 400);
@@ -1553,9 +1549,6 @@ class InteractivePresentationApp {
     this.splashOverlay.classList.add('fade-out');
     setTimeout(() => {
       this.splashOverlay.style.display = 'none';
-      if (this.hasVisitedIntro() && this.currentSlide < 3) {
-        this.goToSlide(3, false);
-      }
     }, 400);
   }
 
@@ -2395,9 +2388,9 @@ class InteractivePresentationApp {
 
         let msg = '';
         if (hasPost) {
-          msg = `Data siswa terverifikasi (Skor Post-test: ${savedPost}). Semua slide telah terbuka!`;
+          msg = `Data siswa terverifikasi (Skor Post-test: ${savedPost}). Silakan klik "Mulai Belajar".`;
         } else if (savedPre !== null && savedPre !== undefined) {
-          msg = `Data siswa terverifikasi (Skor Pretest: ${savedPre}). Silakan pilih "Next ke Slide 3" atau "Pretest Lagi".`;
+          msg = `Data siswa terverifikasi (Skor Pretest: ${savedPre}). Silakan klik "Mulai Belajar" atau "Pretest Lagi".`;
         } else {
           msg = 'Data siswa berhasil diverifikasi. Silakan klik "Start Pretest".';
         }
@@ -2439,8 +2432,8 @@ class InteractivePresentationApp {
       this.slide11ViewedFeatures = new Set(dataService.getSlide11Progress());
 
       if (this.btnStartSplash) {
-        this.btnStartSplash.textContent = `Buka Materi (Post-test: ${savedPosttest}) ➔`;
-        this.btnStartSplash.setAttribute('title', 'Semua slide terbuka. Klik untuk masuk.');
+        this.btnStartSplash.textContent = `Mulai Belajar (Post-test: ${savedPosttest}) ➔`;
+        this.btnStartSplash.setAttribute('title', 'Mulai belajar dari Slide 1');
         this.btnStartSplash.style.display = 'inline-flex';
       }
       if (this.btnRetakePretest) {
@@ -2457,8 +2450,8 @@ class InteractivePresentationApp {
 
       if (savedPretest !== null && savedPretest !== undefined) {
         if (this.btnStartSplash) {
-          this.btnStartSplash.textContent = `Next ke Slide 3 (Pretest: ${savedPretest}) ➔`;
-          this.btnStartSplash.setAttribute('title', 'Lanjut langsung ke materi Slide 3');
+          this.btnStartSplash.textContent = `Mulai Belajar (Pretest: ${savedPretest}) ➔`;
+          this.btnStartSplash.setAttribute('title', 'Mulai belajar dari Slide 1');
           this.btnStartSplash.style.display = 'inline-flex';
         }
         if (this.btnRetakePretest) {
@@ -2976,17 +2969,16 @@ class InteractivePresentationApp {
       }, 300);
     }
 
-    // Arahkan ke materi (Slide 3 jika intro sudah pernah dibuka, atau Slide 1 jika pertama kali)
-    const targetSlide = this.hasVisitedIntro() ? 3 : 1;
-    this.goToSlide(targetSlide, false);
-    if (targetSlide === 1 && this.videoSlide1) {
+    // Arahkan ke Slide 1 (Cover) untuk memulai pembelajaran
+    this.goToSlide(1, false);
+    if (this.videoSlide1) {
       this.videoSlide1.muted = sound.muted;
       this.playSlideVideo(this.videoSlide1);
     }
 
     const student = dataService.getCurrentStudent();
     if (student) {
-      this.showToast(`Pretest verified for ${student.Nama}.`);
+      this.showToast(`Pretest selesai untuk ${student.Nama}. Silakan mulai dari Slide 1.`);
     }
   }
 
